@@ -123,4 +123,14 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Passport Client
+    |--------------------------------------------------------------------------
+    |
+    */
+
+    'client_id' => env('PASSPORT_CLIENT_ID'),
+    'client_secret' => env('PASSPORT_CLIENT_SECRET'),
+
 ];

@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Hash;
 use Laravel\Passport\HasApiTokens;
 
 class User extends Authenticatable
@@ -44,5 +45,16 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Valida la contraseña del usuario para el Grant de contraseña de Passport.
+     *
+     * @param  string  $password  La contraseña proporcionada para la validación.
+     * @return bool  Retorna true si la contraseña es válida, false de lo contrario.
+     */
+    public function validateForPassportPasswordGrant(string $password): bool
+    {
+        return Hash::check($password, $this->password);
     }
 }
