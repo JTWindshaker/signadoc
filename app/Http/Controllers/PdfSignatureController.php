@@ -161,7 +161,8 @@ class PdfSignatureController extends Controller
         // Fin QR
 
         $signer = new \SetaPDF_Signer($document);
-        $signer->setSignatureContentLength(26000);
+        // $signer->setSignatureContentLength(26000);
+        $signer->setSignatureContentLength(50000);
 
         // Convertir el archivo P12 a PEM si es necesario
         $certPath = public_path('storage/certificates/' . $p12Filename); //Route P12 CONFIRMED
@@ -200,22 +201,15 @@ class PdfSignatureController extends Controller
         $module->setCertificate($pkcs12['cert']);
         $module->setPrivateKey($pkcs12['pkey']);
 
-        // $trustedCertificates = new Collection(Pem::extractFromFile('path/to/cacert.pem')); //PROBLEM HERE
-        // $collector = new Collector($trustedCertificates);
         $certificate = new Certificate($pkcs12['cert']);
 
-
-
-        // =====================
-        // $trustedCertificates = new Collection(Pem::extractFromFile('path/to/cacert.pem')); // ß sus certificados raíz de confianza
-        $collector = new Collector();
-
         if (isset($pkcs12['extracerts']) && count($pkcs12['extracerts'])) {
+            $trustedCertificates = new Collection($pkcs12['extracerts']);
+            $collector = new Collector($trustedCertificates);
             $collector->getExtraCertificates()->add($pkcs12['extracerts']);
+        } else {
+            $collector = new Collector();
         }
-        // =====================
-
-
 
         /* Fin del espacio para producción */
 
@@ -234,9 +228,7 @@ class PdfSignatureController extends Controller
         // /* Fin del espacio de pruebas para desarrollo */
 
         try {
-            $vriData = $collector->getByCertificate();
-            // $vriData = $collector->getByCertificate($certificate);
-
+            $vriData = $collector->getByCertificate($certificate);
             $module->setExtraCertificates($vriData->getCertificates());
             foreach ($vriData->getOcspResponses() as $ocspResponse) {
                 $module->addOcspResponse($ocspResponse);
@@ -247,6 +239,7 @@ class PdfSignatureController extends Controller
             }
         } catch (\SetaPDF_Signer_ValidationRelatedInfo_Exception $th) {
             // Permite firmar pero sin ltv
+            // dd($th);
         }
 
         if ($withStamp) {
