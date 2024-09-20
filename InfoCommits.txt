@@ -1,9 +1,11 @@
 =========================================
-============= *Ready 13/09/2024* ============
+============= *Ready 20/09/2024* ============
 =========================================
 
 *Cambios:*
--- Ajustes para la firma LTV con Certificados de confianza
+-- Ajustes en el firmado doble.
+-- Se agrega la página a la posición de la firma.
+-- Ajustes generales faltantes en la versión ya desplegada
 
 
 *Notas/Observaciones:*

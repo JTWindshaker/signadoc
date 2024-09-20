@@ -11,6 +11,7 @@ use SetaPDF_Signer_X509_Certificate as Certificate;
 use SetaPDF_Signer_Pem as Pem;
 use SetaPDF_Signer_X509_Collection as Collection;
 use SetaPDF_Signer_ValidationRelatedInfo_Collector as Collector;
+use Throwable;
 
 class PdfSignatureController extends Controller
 {
@@ -34,8 +35,8 @@ class PdfSignatureController extends Controller
                     function ($attribute, $value, $fail) use ($request) {
                         if (in_array($request->input('visibleSign'), [1, 2]) && empty($value)) {
                             $fail($attribute . ' is required when visibleSign is 1 or 2.');
-                        } elseif (!empty($value) && !preg_match('/^\d+,\d+,\d+,\d+$/', $value)) {
-                            $fail('The format of ' . $attribute . ' is invalid. It must be x,y,width,height.');
+                        } elseif (!empty($value) && !preg_match('/^\d+,\d+,\d+,\d+,\d+$/', $value)) {
+                            $fail('The format of ' . $attribute . ' is invalid. It must be pag,x,y,width,height.');
                         }
                     },
                 ],
@@ -258,16 +259,29 @@ class PdfSignatureController extends Controller
         switch ($visibleSign) {
             case 0:
                 //Firma Invisible
+                // add a signature field with the doubled height of the text block
+                $field = $signer->addSignatureField(
+                    $timestamp
+                );
+
+                // set the signature field name
+                $signer->setSignatureFieldName($field->getQualifiedName());
+
                 break;
             case 1:
                 // Dividir la cadena en partes
-                list($x, $y, $width, $height) = explode(',', $posSign);
+                list($page, $x, $y, $width, $height) = explode(',', $posSign);
 
                 // Convertir los valores a enteros (si es necesario)
+                $page = (int) $page;
                 $x = (int) $x;
                 $y = (int) $y;
                 $width = (int) $width;
                 $height = (int) $height;
+
+                if ($page > $lastPage) {
+                    return ApiResponse::error("Page $page dont exist in document.", 400);
+                }
 
                 // Decodificar los datos base64
                 if ($imgSign !== null && $imgSign !== "") {
@@ -313,7 +327,7 @@ class PdfSignatureController extends Controller
 
                     // add a signature field with the doubled height of the text block
                     $field = $signer->addSignatureField(
-                        \SetaPDF_Signer_SignatureField::DEFAULT_FIELD_NAME,
+                        $timestamp,
                         $lastPage,
                         $defaultPosSign,
                         ['x' => $x, 'y' => $y],
@@ -353,7 +367,7 @@ class PdfSignatureController extends Controller
 
                     // add a signature field with the doubled height of the text block
                     $field = $signer->addSignatureField(
-                        \SetaPDF_Signer_SignatureField::DEFAULT_FIELD_NAME,
+                        $timestamp,
                         $lastPage,
                         $defaultPosSign,
                         ['x' => $x, 'y' => $y],
@@ -370,17 +384,22 @@ class PdfSignatureController extends Controller
                 break;
             case 2:
                 // Dividir la cadena en partes
-                list($x, $y, $width, $height) = explode(',', $posSign);
+                list($page, $x, $y, $width, $height) = explode(',', $posSign);
 
                 // Convertir los valores a enteros (si es necesario)
+                $page = (int) $page;
                 $x = (int) $x;
                 $y = (int) $y;
                 $width = (int) $width;
                 $height = (int) $height;
 
+                if ($page > $lastPage) {
+                    return ApiResponse::error("Page $page dont exist in document.", 400);
+                }
+
                 // add a signature field with the doubled height of the text block
                 $field = $signer->addSignatureField(
-                    \SetaPDF_Signer_SignatureField::DEFAULT_FIELD_NAME,
+                    $timestamp,
                     $lastPage,
                     $defaultPosSign,
                     ['x' => $x, 'y' => $y],
@@ -471,13 +490,14 @@ class PdfSignatureController extends Controller
 
                 break;
             default:
-                dd("Tipo de firma no válida (" . $visibleSign . ").");
+                return ApiResponse::error("Error en el firmado del pdf.", 400, "Tipo de firma no válida ($visibleSign)");
                 break;
         }
 
         try {
             $signer->sign($module);
             $b64 = base64_encode((string) $writer);
+            $this->deleteFiles($arrDocs);
 
             return ApiResponse::success(
                 [

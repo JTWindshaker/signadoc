@@ -48,7 +48,7 @@ class UserController extends Controller
                 ]);
         } catch (Throwable $th) {
             // Manejo de errores en la solicitud
-            return ApiResponse::error('Validation failed', 400, $th->errors());
+            return ApiResponse::error('Validation failed', 400, $th->getMessage());
         }
 
         // Verificar si la solicitud fue exitosa
