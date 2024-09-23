@@ -24,7 +24,14 @@ class PdfSignatureController extends Controller
                 'base64P12' => 'required|string',
                 'passP12' => 'required|string',
                 'withStamp' => 'required|boolean',
-                'urlStamp' => 'required|string',
+                'urlStamp' => [
+                    'string',
+                    function ($attribute, $value, $fail) use ($request) {
+                        if ($request->input('withStamp') == 1 && empty($value)) {
+                            $fail($attribute . ' is required when withStamp is 1.');
+                        }
+                    },
+                ],
                 'userStamp' => 'nullable|string',
                 'passStamp' => 'nullable|string',
                 'visibleSign' => 'required|integer|in:0,1,2',
@@ -89,7 +96,7 @@ class PdfSignatureController extends Controller
         $base64PDF = $request->base64PDF;
         $base64P12 = $request->base64P12;
         $passP12 = $request->passP12;
-        $withStamp = $request->withStamp;
+        $withStamp = $request->withStamp == 1;
         $urlStamp = $request->urlStamp;
         $userStamp = $request->userStamp;
         $passStamp = $request->passStamp;

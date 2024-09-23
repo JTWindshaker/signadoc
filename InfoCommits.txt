@@ -1,11 +1,9 @@
 =========================================
-============= *Ready 20/09/2024* ============
+============= *Ready 23/09/2024* ============
 =========================================
 
 *Cambios:*
--- Ajustes en el firmado doble.
--- Se agrega la página a la posición de la firma.
--- Ajustes generales faltantes en la versión ya desplegada
+-- No pedir la url de estampa si se pasa false el booleano
 
 
 *Notas/Observaciones:*
