@@ -20,6 +20,12 @@ class UserController extends Controller
      */
     public function __construct() {}
 
+    /**
+     * Inicia sesión un usuario y devuelve un token de autenticación.
+     *
+     * @param Request $request La solicitud HTTP que contiene las credenciales del usuario.
+     * @return \Illuminate\Http\JsonResponse La respuesta JSON que contiene el resultado del inicio de sesión.
+     */
     public function auth(Request $request): JsonResponse
     {
         try {

@@ -2,10 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Helpers\ApiResponse;
+use App\Helpers\ProjectResponse;
+use App\Models\Solicitud;
+use App\Models\SolicitudCampo;
 use App\Services\LogService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use SetaPDF_Signer_X509_Certificate as Certificate;
@@ -14,8 +19,26 @@ use SetaPDF_Signer_X509_Collection as Collection;
 use SetaPDF_Signer_ValidationRelatedInfo_Collector as Collector;
 use Throwable;
 
-class PdfSignatureController extends Controller
+class RequestController extends Controller
 {
+
+    /**
+     * Instantiate a new controller instance.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+        // $this->middleware('auth');
+        // $this->middleware(function ($request, $next) {
+        //     if (!Auth::user()->verificarTarea(Tarea::TAREA_PRODUCTO)) {
+        //         return redirect('/menu');
+        //     } else {
+        //         return $next($request);
+        //     }
+        // });
+    }
+
     /**
      * Maneja la firma de documentos PDF.
      *
@@ -27,6 +50,7 @@ class PdfSignatureController extends Controller
         $logService = new LogService('sign_doc');
         $logService->log("Proceso iniciado", true);
 
+        //PENDIENTE: TODOS LOS VALORES FIJOS, CAMBIARLOS POR VARIABLES PARA DINAMIZAR EL CÓDIGO
         try {
             // Validar los datos de entrada
             $request->validate([
@@ -44,14 +68,14 @@ class PdfSignatureController extends Controller
                 ],
                 'userStamp' => 'nullable|string',
                 'passStamp' => 'nullable|string',
-                'visibleSign' => 'required|integer|in:0,1,2',
+                'visibleSign' => 'required|integer|in:1,2,3',
                 'imgSign' => 'nullable|string',
                 'posSign' => [
                     'nullable',
                     'string',
                     function ($attribute, $value, $fail) use ($request) {
-                        if (in_array($request->input('visibleSign'), [1, 2]) && empty($value)) {
-                            $fail($attribute . ' is required when visibleSign is 1 or 2.');
+                        if (in_array($request->input('visibleSign'), [2, 3]) && empty($value)) {
+                            $fail($attribute . ' is required when visibleSign is 2 or 3.');
                         } elseif (!empty($value) && !preg_match('/^\d+,\d+,\d+,\d+,\d+$/', $value)) {
                             $fail('The format of ' . $attribute . ' is invalid. It must be pag,x,y,width,height.');
                         }
@@ -61,8 +85,8 @@ class PdfSignatureController extends Controller
                     'nullable',
                     'boolean',
                     function ($attribute, $value, $fail) use ($request) {
-                        if ($request->input('visibleSign') == 2 && $value === null) {
-                            $fail($attribute . ' is required when visibleSign is 2.');
+                        if ($request->input('visibleSign') == 3 && $value === null) {
+                            $fail($attribute . ' is required when visibleSign is 3.');
                         }
                     },
                 ],
@@ -70,8 +94,8 @@ class PdfSignatureController extends Controller
                     'nullable',
                     'string',
                     function ($attribute, $value, $fail) use ($request) {
-                        if ($request->input('graphicSign') && $request->input('visibleSign') == 2 && empty($value)) {
-                            $fail($attribute . ' is required when graphicSign is true and visibleSign is 2.');
+                        if ($request->input('graphicSign') && $request->input('visibleSign') == 3 && empty($value)) {
+                            $fail($attribute . ' is required when graphicSign is true and visibleSign is 3.');
                         }
                     },
                 ],
@@ -105,7 +129,7 @@ class PdfSignatureController extends Controller
                 $logService->log("$obj = " . implode(", ", $value));
             }
 
-            return ApiResponse::error('Validation failed', 400, $th->errors());
+            return ProjectResponse::error('Validation failed', 400, $th->errors());
         }
 
         // Obtener los datos de entrada
@@ -126,6 +150,10 @@ class PdfSignatureController extends Controller
         $locationSign = $request->locationSign;
         $txtQR = $request->txtQR;
         $infoQR = $request->infoQR;
+        $qrData = null;
+        $imgData = null;
+        $bgData = null;
+        $graphData = null;
 
         $defaultPosSign = \SetaPDF_Signer_SignatureField::POSITION_LEFT_BOTTOM;
 
@@ -170,7 +198,7 @@ class PdfSignatureController extends Controller
             // Validar que la página existe
             if ($pagQR > $lastPage) {
                 $logService->log("Page $pagQR dont exist in document.");
-                return ApiResponse::error("Page $pagQR dont exist in document.", 400);
+                return ProjectResponse::error("Page $pagQR dont exist in document.", 400);
             }
 
             // Generar imagen QR
@@ -208,7 +236,7 @@ class PdfSignatureController extends Controller
         if (!$certContent) {
             $this->deleteFiles($arrDocs);
             $logService->log("Invalid certificate content");
-            return ApiResponse::error('Invalid certificate content', 400, $th->errors());
+            return ProjectResponse::error('Invalid certificate content', 400, $th->errors());
         }
 
         // Proceso para leer el certificado P12
@@ -217,7 +245,7 @@ class PdfSignatureController extends Controller
             if (!openssl_pkcs12_read($certContent, $pkcs12, $passP12)) {
                 $this->deleteFiles($arrDocs);
                 $logService->log("No se pudo leer el certificado PKCS#12. Verifica la contraseña.");
-                return ApiResponse::error('No se pudo leer el certificado PKCS#12. Verifica la contraseña.', 400);
+                return ProjectResponse::error('No se pudo leer el certificado PKCS#12. Verifica la contraseña.', 400);
             }
             $certContent = $pkcs12['cert'];
             $privateKey = $pkcs12['pkey'];
@@ -230,14 +258,14 @@ class PdfSignatureController extends Controller
         if (!$certContent) {
             $this->deleteFiles($arrDocs);
             $logService->log("No se pudo leer el certificado X.509.");
-            return ApiResponse::error('No se pudo leer el certificado X.509.', 400);
+            return ProjectResponse::error('No se pudo leer el certificado X.509.', 400);
         }
 
         // Verifica si se ha podido leer la clave privada
         if (!$privateKey) {
             $this->deleteFiles($arrDocs);
             $logService->log("No se pudo leer la clave privada.");
-            return ApiResponse::error('No se pudo leer la clave privada.', 400);
+            return ProjectResponse::error('No se pudo leer la clave privada.', 400);
         }
 
         // Crea un módulo de firma para PDF utilizando la clase SetaPDF_Signer_Signature_Module_Pades
@@ -294,7 +322,7 @@ class PdfSignatureController extends Controller
 
         // Configuración de la apariencia de la firma
         switch ($visibleSign) {
-            case 0:
+            case 1:
                 // Firma Invisible
                 // Agrega un campo de firma con el doble de la altura del bloque de texto
                 $field = $signer->addSignatureField(
@@ -305,7 +333,7 @@ class PdfSignatureController extends Controller
                 $signer->setSignatureFieldName($field->getQualifiedName());
 
                 break;
-            case 1:
+            case 2:
                 // Dividir la cadena en partes
                 list($page, $x, $y, $width, $height) = explode(',', $posSign);
 
@@ -319,7 +347,7 @@ class PdfSignatureController extends Controller
                 // Verifica si la página especificada existe
                 if ($page > $lastPage) {
                     $logService->log("Page $page dont exist in document.");
-                    return ApiResponse::error("Page $page dont exist in document.", 400);
+                    return ProjectResponse::error("Page $page dont exist in document.", 400);
                 }
 
                 // Decodificar los datos de la imagen en base64
@@ -425,7 +453,7 @@ class PdfSignatureController extends Controller
                     $signer->setAppearance($appearance);
                 }
                 break;
-            case 2:
+            case 3:
                 // Dividir la cadena en partes
                 list($page, $x, $y, $width, $height) = explode(',', $posSign);
 
@@ -439,7 +467,7 @@ class PdfSignatureController extends Controller
                 // Verifica si la página especificada existe
                 if ($page > $lastPage) {
                     $logService->log("Page $page dont exist in document.");
-                    return ApiResponse::error("Page $page dont exist in document.", 400);
+                    return ProjectResponse::error("Page $page dont exist in document.", 400);
                 }
 
                 // Agrega un campo de firma
@@ -539,7 +567,7 @@ class PdfSignatureController extends Controller
                 break;
             default:
                 $logService->log("Error en el firmado del pdf: Tipo de firma no válida ($visibleSign)");
-                return ApiResponse::error("Error en el firmado del pdf.", 400, "Tipo de firma no válida ($visibleSign)");
+                return ProjectResponse::error("Error en el firmado del pdf.", 400, "Tipo de firma no válida ($visibleSign)");
                 break;
         }
 
@@ -552,13 +580,54 @@ class PdfSignatureController extends Controller
             $logService->log("Documento firmado correctamente");
             $logService->log("Proceso finalizado", false, true);
 
-            // Retorna la respuesta exitosa con el PDF firmado
-            return ApiResponse::success(
-                [
-                    'pdf' => $b64,
-                ],
-                'Documento firmado correctamente'
-            );
+            try {
+                DB::beginTransaction();
+
+                $objSolicitud = Solicitud::create([
+                    'hash_documento' => hash('sha512', $pdfData),
+                    'users_email' => Auth::user()->email,
+                    'estado' => true,
+                ]);
+
+                SolicitudCampo::insert([
+                    'solicitud_id' => $objSolicitud->id,
+                    'p12_hash' => hash('sha512', $p12Data),
+                    'p12_pass' => Hash::make($passP12),
+                    'con_estampa' => $withStamp,
+                    'estampa_url' => $urlStamp,
+                    'estampa_usuario' => $userStamp,
+                    'estampa_pass' => Hash::make($passStamp),
+                    'tipo_firma_id' => $visibleSign,
+                    'firma_imagen' => hash('sha512', $imgData),
+                    'firma_informacion' => $posSign,
+                    'con_grafico' => $graphicSign,
+                    'grafico_imagen' => hash('sha512', $graphData),
+                    'grafico_fondo' => hash('sha512', $bgData),
+                    'firma_razon' => $reasonSign,
+                    'firma_ubicacion' => $locationSign,
+                    'qr_imagen' => hash('sha512', $qrData),
+                    'qr_informacion' => $infoQR,
+                    'qr_texto' => $txtQR,
+                ]);
+
+                DB::commit();
+                // Retorna la respuesta exitosa con el PDF firmado
+                return ProjectResponse::success(
+                    [
+                        'pdf' => $b64,
+                    ],
+                    'Documento firmado correctamente'
+                );
+            } catch (\Exception $e) {
+                DB::rollBack();
+                $logService->log("Error en el registro de la solicitud");
+                $logService->log($e->getMessage() . '. Line: ' . $e->getLine());
+                $logService->log("Proceso finalizado", false, true);
+
+                // En caso de error, elimina archivos temporales y retorna un error
+                $this->deleteFiles($arrDocs);
+                return ProjectResponse::error("Error en el registro de la solicitud.", 400, $e->getMessage() . '. Line: ' . $e->getLine());
+            }
         } catch (\SetaPDF_Signer_Exception $th) {
             $logService->log("Error en el proceso");
             $logService->log($th->getMessage());
@@ -566,7 +635,7 @@ class PdfSignatureController extends Controller
 
             // En caso de error, elimina archivos temporales y retorna un error
             $this->deleteFiles($arrDocs);
-            return ApiResponse::error("Error en el firmado del pdf.", 400, $th->getMessage());
+            return ProjectResponse::error("Error en el firmado del pdf.", 400, $th->getMessage());
         }
     }
 
@@ -583,5 +652,19 @@ class PdfSignatureController extends Controller
                 Storage::disk('local')->delete($file);
             }
         }
+    }
+
+    public function requestView()
+    {
+        return view('request');
+    }
+
+    public function listRequests()
+    {
+        $solicitudes = DB::table('solicitud')
+            ->join('solicitud_campo', 'solicitud_campo.solicitud_id', '=', 'solicitud.id')
+            ->get(); // Obtén todos los registros de la tabla 'solicitud'
+
+        return ProjectResponse::success($solicitudes); // Retorna los datos en formato JSON
     }
 }
