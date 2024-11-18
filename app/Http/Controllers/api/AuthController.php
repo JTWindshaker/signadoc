@@ -1,14 +1,15 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\api;
 
 use App\Helpers\ApiResponse;
+use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Throwable;
 
-class UserController extends Controller
+class AuthController extends Controller
 {
     // Definición de constantes
     public const CODE_ERROR_NO_CORRECT_DATA = 6;

@@ -8,6 +8,8 @@
 
 *Notas/Observaciones:*
 -- Se procederá después de esto, unificar procesos (Web y Api).
+-- Se mejoró el cliente para mejorar el proceso de validación del firmador.
+-- Se mejoró el método de firmado: Habían unas excepciones que no eliminaban los archivos creados generando uso innecesario de disco.
 
 *SQL:*
 --

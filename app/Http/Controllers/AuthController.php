@@ -9,7 +9,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Throwable;
 
-class LoginController extends Controller
+class AuthController extends Controller
 {
     /**
      * Crear una nueva instancia del controlador.

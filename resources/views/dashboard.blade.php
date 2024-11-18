@@ -25,7 +25,8 @@
 
         <div class="mb-3">
             <label for="passP12" class="form-label">Contraseña P12:</label>
-            <input type="text" name="passP12" id="passP12" class="form-control" value="representante_legal_pruebas">
+            <input type="text" name="passP12" id="passP12" class="form-control"
+                value="representante_legal_pruebas">
         </div>
 
         <div class="mb-3 form-check">
@@ -198,65 +199,101 @@
                     convertToBase64($('#imgSign')[0]),
                     convertToBase64($('#base64GraphicSign')[0]),
                     convertToBase64($('#backgroundSign')[0]),
-                ]).then((results) => {
-                    formData.append('base64PDF', results[0]);
-                    formData.append('base64P12', results[1]);
-                    formData.append('passP12', $('#passP12').val());
-                    formData.append('withStamp', $('#withStamp').is(':checked') ? 1 : 0);
-                    formData.append('urlStamp', $('#urlStamp').val());
-                    formData.append('userStamp', $('#userStamp').val());
-                    formData.append('passStamp', $('#passStamp').val());
-                    formData.append('visibleSign', $('#visibleSign').val());
-                    formData.append('imgSign', results[2]);
-                    //PENDIENTE: Cuadrar como se enviarán estos datos ya que si van vacíos, se mandan las ',' y hace reventar el método
-                    formData.append('posSign', [
-                        $('#pageSign').val(),
-                        $('#xSign').val(),
-                        $('#ySign').val(),
-                        $('#widthSign').val(),
-                        $('#heightSign').val()
-                    ].join(','));
-                    formData.append('graphicSign', $('#graphicSign').is(':checked') ? 1 : 0);
-                    formData.append('base64GraphicSign', results[3]);
-                    formData.append('backgroundSign', results[4]);
-                    formData.append('reasonSign', $('#reasonSign').val());
-                    formData.append('locationSign', $('#locationSign').val());
-                    //PENDIENTE: Cuadrar como se enviarán estos datos ya que si van vacíos, se mandan las ',' y hace reventar el método
-
-                    // Obtener los valores de los inputs
-                    const qrPage = $('#qrPage').val();
-                    const qrX = $('#qrX').val();
-                    const qrY = $('#qrY').val();
-                    const qrSize = $('#qrSize').val();
-
-                    // Comprobar si todos los valores son vacíos
-                    if (qrPage && qrX && qrY && qrSize) {
-                        formData.append('infoQR', [qrPage, qrX, qrY, qrSize].join(','));
-                    } else {
-                        // formData.append('infoQR', null); // Enviar 'null' si todos están vacíos
-                    }
-
-                    formData.append('txtQR', $('#txtQR').val());
-
-                    // Enviar la solicitud AJAX
-                    $.ajax({
-                        url: "/sign",
-                        type: "POST",
-                        headers: {
-                            'X-CSRF-TOKEN': csrfToken
-                        },
-                        data: formData,
-                        processData: false,
-                        contentType: false,
-                        success: function(res) {
-                            if (res.success) {
-                                downloadBase64File(res.data.pdf, 'ResultSign.pdf');
-                            } else {
-                                alert("error");
-                            }
+                ]).then(
+                    (results) => {
+                        if (results[0] !== null && results[0] !== "null") {
+                            formData.append('base64PDF', results[0]);
+                        } else {
+                            formData.append('base64PDF', "");
                         }
-                    });
-                }).catch((error) => {
+
+                        if (results[1] !== null && results[1] !== "null") {
+                            formData.append('base64P12', results[1]);
+                        } else {
+                            formData.append('base64P12', "");
+                        }
+
+                        if (results[2] !== null && results[2] !== "null") {
+                            formData.append('imgSign', results[2]);
+                        } else {
+                            formData.append('imgSign', "");
+                        }
+
+                        if (results[3] !== null && results[3] !== "null") {
+                            formData.append('base64GraphicSign', results[3]);
+                        } else {
+                            formData.append('base64GraphicSign', "");
+                        }
+
+                        if (results[4] !== null && results[4] !== "null") {
+                            formData.append('backgroundSign', results[4]);
+                        } else {
+                            formData.append('backgroundSign', "");
+                        }
+
+                        formData.append('passP12', $('#passP12').val());
+                        formData.append('withStamp', $('#withStamp').is(':checked') ? 1 : 0);
+                        formData.append('urlStamp', $('#urlStamp').val());
+                        formData.append('userStamp', $('#userStamp').val());
+                        formData.append('passStamp', $('#passStamp').val());
+                        formData.append('visibleSign', $('#visibleSign').val());
+
+                        const posSignValues = [
+                            $('#pageSign').val(),
+                            $('#xSign').val(),
+                            $('#ySign').val(),
+                            $('#widthSign').val(),
+                            $('#heightSign').val()
+                        ];
+
+                        if (posSignValues.every(value => value !== null && value !== "null" && value !==
+                                '')) {
+                            formData.append('posSign', posSignValues.join(','));
+                        } else {
+                            formData.append('posSign', "");
+                        }
+
+                        formData.append('graphicSign', $('#graphicSign').is(':checked') ? 1 : 0);
+
+                        formData.append('reasonSign', $('#reasonSign').val());
+                        formData.append('locationSign', $('#locationSign').val());
+
+                        // Verificar inputs relacionados con QR
+                        const qrValues = [
+                            $('#qrPage').val(),
+                            $('#qrX').val(),
+                            $('#qrY').val(),
+                            $('#qrSize').val()
+                        ];
+
+                        if (qrValues.every(value => value !== null && value !== "null" && value !==
+                                '')) {
+                            formData.append('infoQR', qrValues.join(','));
+                        } else {
+                            formData.append('infoQR', "");
+                        }
+
+                        formData.append('txtQR', $('#txtQR').val());
+
+                        // Enviar la solicitud AJAX
+                        $.ajax({
+                            url: "/sign",
+                            type: "POST",
+                            headers: {
+                                'X-CSRF-TOKEN': csrfToken
+                            },
+                            data: formData,
+                            processData: false,
+                            contentType: false,
+                            success: function(res) {
+                                if (res.success) {
+                                    downloadBase64File(res.data.pdf, 'ResultSign.pdf');
+                                } else {
+                                    alert(res.message);
+                                }
+                            }
+                        });
+                    }).catch((error) => {
                     console.error('Error al convertir archivos a base64:', error);
                     alert('Ocurrió un error al procesar los archivos.');
                 });

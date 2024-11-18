@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Controllers\PdfSignatureController;
-use App\Http\Controllers\UserController;
+use App\Http\Controllers\api\AuthController;
+use App\Http\Controllers\api\PdfSignatureController;
 use App\Http\Middleware\EnsureTokenIsValid;
 use Illuminate\Support\Facades\Route;
 
@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Route;
  * Respuesta de error: 400 Bad Request si no se proporcionan criterios válidos
  * Respuesta de error: 401 Unauthorized si las credenciales son incorrectas
  */
-Route::post('/auth', [UserController::class, 'auth'])
+Route::post('/auth', [AuthController::class, 'auth'])
     ->name("auth");
 
 // Agrupación de rutas protegidas por middleware de autenticación
