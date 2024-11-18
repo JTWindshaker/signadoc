@@ -1,87 +1,14 @@
 =========================================
-============= *Ready 10/10/2024* ============
+============= *Ready 18/11/2024* ============
 =========================================
 
 *Cambios:*
--- Documentar el API.
--- Agregar logs de cada petición.
--- Crear estructura de db para soportar la parte inicial del requerimiento
--- Crear un sistema de login para la plataforma
--- Crear una vista donde se pueda cargar todos los campos necesarios para el proceso de firma
--- Crear una vista donde se puedan cargar las solicitudes (Aun falta muchísimo pero la idea es que el funcionamiento de la firma, log y registro en db, esté correcto).
+-- Se realizaron ajustes al firmador web dados en el archivo Pruebas_2024-11-15.docx
+-- Se 
 
 
 *Notas/Observaciones:*
--- Tener en cuenta buscar la palabra //PENDIENTE: para ver las cosas que aún no están implementadas
--- Para las interfaces diseñadas, no se tuvo en cuenta ninguna estructura, ningún diseño y ninguna validación. Todas se realizarán posterior cuando se haya probado la opción y lo básico funcione. Esto porque toca separar en dos controladores, el metodo de firma ya que usan respuestas diferentes y la interacción con el usuario es distinta al ser el proceso desde la plataforma web.
--- Pendiente revisar y definir, como diferenciaremos el usuario principal de la empresa de los "normales"... No vuelvan a irse de esa forma de verdad que más de la mitad del proceso que hice, SOLO LO QUE HICE, está inconcluso jajajajaja. Dios me proteja cuando vuelvan!
+-- Se procederá después de esto, unificar procesos (Web y Api).
 
 *SQL:*
-#Se crea la tabla empresa
-create table empresa(
-    id serial primary key,
-    nombre varchar(100) not null,
-    documento varchar(100) not null,
-    estado boolean not null default false,
-    fecha_registro timestamp not null default CURRENT_TIMESTAMP
-);
-
-#Se agrega la foránea a la tabla users
-alter table users add column empresa_id int;
-alter table users add constraint empresa_id_foreign foreign key(empresa_id) references empresa(id);
-
-#Se crea una empresa para las pruebas
-insert into empresa(nombre, documento) values('Nucli S.A.S', 'NIT 9009002002');
-
-#Se actualiza el usuario registrado de pruebas para vincularle la empresa creada
-update users set name='Esteban Madiedo', email='esteban.madiedo@nucli.com.co', empresa_id=1 where id=1;
-
-#Se agrega el constraint not null al campo empresa_id
-alter table users alter column empresa_id set not null;
-
-#Se crea la tabla tipo_firma y se registran las tres firmas que trabajaremos empezando. Los nombres pueden ser cambiados pero por favor, reportar el cambio para hacer el cambio de variable en mis archivos
-create table tipo_firma(
-    id serial primary key,
-    nombre varchar(50) not null,
-    estado boolean not null default false,
-    fecha_registro timestamp not null default CURRENT_TIMESTAMP
-);
-
-insert into tipo_firma(nombre, estado) values('Invisible', true);
-insert into tipo_firma(nombre, estado) values('Visible', true);
-insert into tipo_firma(nombre, estado) values('visible Dos', true);
-
-#Se crea la tabla solicitud. Recordar que el campo users_id no será usado para evitar problemas del cargue de las solicitudes por empresa si se remuevan usuarios. Se usará el campo "Email" para llevar dicho control
-create table solicitud(
-    id serial primary key,
-    hash_documento varchar(255) not null,
-    users_email varchar(100) not null,
-    estado boolean not null default false,
-    fecha_registro timestamp not null default CURRENT_TIMESTAMP
-);
-
-#Se crea la tabla solicitud_campo. Se habló con el Ing y aceptó la propuesta de tener separada las propiedades de las solicitudes en otra tabla para mejor control. No se a la larga si será buena idea o no pero correré el riesgo.
-create table solicitud_campo(
-    id serial primary key,
-    solicitud_id bigint not null,
-    p12_hash varchar(255) not null,
-	p12_pass varchar(255) not null,
-	con_estampa boolean not null default false,
-	estampa_url varchar(120),
-	estampa_usuario varchar(120),
-	estampa_pass varchar(255),
-	tipo_firma_id int not null,
-	firma_imagen varchar(255),
-	firma_informacion varchar(30),
-	con_grafico boolean not null default false,
-	grafico_imagen varchar(255),
-	grafico_fondo varchar(255),
-	firma_razon varchar(100),
-	firma_ubicacion varchar(100),
-	qr_imagen varchar(255),
-	qr_informacion varchar(30),
-	qr_texto varchar(200),
-
-    foreign key(solicitud_id) references solicitud(id),
-	foreign key(tipo_firma_id) references tipo_firma(id)
-);
+--
