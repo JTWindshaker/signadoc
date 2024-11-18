@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers\ProjectResponse;
 use App\Models\Solicitud;
 use App\Models\SolicitudCampo;
+use App\Models\TipoFirma;
 use App\Services\LogService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -29,14 +30,7 @@ class RequestController extends Controller
      */
     public function __construct()
     {
-        // $this->middleware('auth');
-        // $this->middleware(function ($request, $next) {
-        //     if (!Auth::user()->verificarTarea(Tarea::TAREA_PRODUCTO)) {
-        //         return redirect('/menu');
-        //     } else {
-        //         return $next($request);
-        //     }
-        // });
+        /*  */
     }
 
     /**
@@ -50,6 +44,7 @@ class RequestController extends Controller
         $logService = new LogService('sign_doc');
         $logService->log("Proceso iniciado", true);
 
+        $request->urlStamp = ($request->urlStamp === null ? "" : $request->urlStamp);
         //PENDIENTE: TODOS LOS VALORES FIJOS, CAMBIARLOS POR VARIABLES PARA DINAMIZAR EL CÓDIGO
         try {
             // Validar los datos de entrada
@@ -59,10 +54,16 @@ class RequestController extends Controller
                 'passP12' => 'required|string',
                 'withStamp' => 'required|boolean',
                 'urlStamp' => [
-                    'string',
                     function ($attribute, $value, $fail) use ($request) {
-                        if (($request->input('withStamp') == 1 && empty($value)) || ($request->input('withStamp') == 1 && $value == null)) {
-                            $fail($attribute . ' is required when withStamp is 1.');
+                        if ($request->input('withStamp') == 1) {
+                            if (empty($value) || $value == null) {
+                                $fail($attribute . ' is required when withStamp is 1.');
+                                return;
+                            }
+
+                            if (!preg_match('/^(https?:\/\/)?([a-zA-Z0-9.-]+\.[a-zA-Z]{2,6})(:[0-9]{1,5})?(\/.*)?$/', $value)) {
+                                $fail('The format of ' . $attribute . ' is invalid. Please provide a valid URL.');
+                            }
                         }
                     },
                 ],
@@ -76,7 +77,7 @@ class RequestController extends Controller
                     function ($attribute, $value, $fail) use ($request) {
                         if (in_array($request->input('visibleSign'), [2, 3]) && empty($value)) {
                             $fail($attribute . ' is required when visibleSign is 2 or 3.');
-                        } elseif (!empty($value) && !preg_match('/^\d+,\d+,\d+,\d+,\d+$/', $value)) {
+                        } elseif (in_array($request->input('visibleSign'), [2, 3]) && !empty($value) && !preg_match('/^\d+,\d+,\d+,\d+,\d+$/', $value)) {
                             $fail('The format of ' . $attribute . ' is invalid. It must be pag,x,y,width,height.');
                         }
                     },
@@ -94,7 +95,9 @@ class RequestController extends Controller
                     'nullable',
                     'string',
                     function ($attribute, $value, $fail) use ($request) {
-                        if ($request->input('graphicSign') && $request->input('visibleSign') == 3 && empty($value)) {
+                        if ($request->input('graphicSign') && $request->input('visibleSign') == 3 && (empty($value) || $value == "null")) {
+                            // dd($value);
+                            // dd((empty($value) || $value == "null"), empty($value), $value == "null", $value);
                             $fail($attribute . ' is required when graphicSign is true and visibleSign is 3.');
                         }
                     },
@@ -141,11 +144,11 @@ class RequestController extends Controller
         $userStamp = $request->userStamp;
         $passStamp = $request->passStamp;
         $visibleSign = (int) $request->visibleSign;
-        $imgSign = $request->imgSign;
+        $imgSign = ($request->imgSign == "null" ? null : $request->imgSign);
         $posSign = $request->posSign;
         $graphicSign = $request->graphicSign == 1;
-        $base64GraphicSign = $request->base64GraphicSign;
-        $backgroundSign = $request->backgroundSign;
+        $base64GraphicSign = ($request->base64GraphicSign == "null" ? null : $request->base64GraphicSign);
+        $backgroundSign = ($request->backgroundSign == "null" ? null : $request->backgroundSign);
         $reasonSign = $request->reasonSign;
         $locationSign = $request->locationSign;
         $txtQR = $request->txtQR;
@@ -192,7 +195,8 @@ class RequestController extends Controller
             $xQR = (int) $xQR;
             $yQR = (int) $yQR;
             $sizeQR = (int) $sizeQR;
-            $correccionQR = "M";
+            // L: 7%, M: 15%, Q: 25%, H: 30%
+            $correccionQR = "L";
             $typeQR = "png";
 
             // Validar que la página existe
@@ -226,7 +230,7 @@ class RequestController extends Controller
         // Inicializar el firmador
         $signer = new \SetaPDF_Signer($document);
         // $signer->setSignatureContentLength(26000);
-        $signer->setSignatureContentLength(50000);
+        $signer->setSignatureContentLength(80000);
 
         // Ruta del archivo P12
         $certPath = public_path('storage/certificates/' . $p12Filename);
@@ -322,7 +326,7 @@ class RequestController extends Controller
 
         // Configuración de la apariencia de la firma
         switch ($visibleSign) {
-            case 1:
+            case TipoFirma::TIPO_FIRMA_INVISIBLE:
                 // Firma Invisible
                 // Agrega un campo de firma con el doble de la altura del bloque de texto
                 $field = $signer->addSignatureField(
@@ -333,7 +337,7 @@ class RequestController extends Controller
                 $signer->setSignatureFieldName($field->getQualifiedName());
 
                 break;
-            case 2:
+            case TipoFirma::TIPO_FIRMA_VISIBLE:
                 // Dividir la cadena en partes
                 list($page, $x, $y, $width, $height) = explode(',', $posSign);
 
@@ -366,8 +370,8 @@ class RequestController extends Controller
                     $imageXObject = $image->toXObject($document);
 
                     // Define el tamaño de la imagen
-                    $width = $imageXObject->getWidth();
-                    $height = $imageXObject->getHeight();
+                    // $width = $imageXObject->getWidth();
+                    // $height = $imageXObject->getHeight();
                     $xObject = \SetaPDF_Core_XObject_Form::create($document, [0, 0, $width, $height]);
 
                     // Dibuja la imagen en el canvas
@@ -384,10 +388,19 @@ class RequestController extends Controller
                     $textBlock->setPadding(5);
 
                     // Obtiene la información específica del certificado
-                    $certificateInfo = openssl_x509_parse('file://' . $certPath);
+                    if (!file_exists($certPath)) {
+                        dd("Error: The file does not exist at path: $certPath");
+                    }
+
+                    if (!is_readable($certPath)) {
+                        dd("Error: The file is not readable at path: $certPath");
+                    }
+
+                    $certificateInfo = openssl_x509_parse($certContent);
                     $text = "Firmado por:\n"
                         . (isset($certificateInfo['subject']['CN']) ? $certificateInfo['subject']['CN'] : $signer->getName()) . "\n"
                         . date('Y/m/d H:i:s');
+
                     $textBlock->setText($text);
                     $textBlock->draw($canvas, 0, $height / 2 - $textBlock->getHeight() / 2);
 
@@ -397,7 +410,7 @@ class RequestController extends Controller
                     // Agrega un campo de firma
                     $field = $signer->addSignatureField(
                         $timestamp,
-                        $lastPage,
+                        $page,
                         $defaultPosSign,
                         ['x' => $x, 'y' => $y],
                         $width,
@@ -426,7 +439,7 @@ class RequestController extends Controller
                     $textBlock->setPadding(5);
 
                     // Obtiene la información específica del certificado
-                    $certificateInfo = openssl_x509_parse('file://' . $certPath);
+                    $certificateInfo = openssl_x509_parse($certContent);
                     $text = "Firmado por:\n"
                         . (isset($certificateInfo['subject']['CN']) ? $certificateInfo['subject']['CN'] : $signer->getName()) . "\n"
                         . date('Y/m/d H:i:s');
@@ -439,7 +452,7 @@ class RequestController extends Controller
                     // Agrega un campo de firma
                     $field = $signer->addSignatureField(
                         $timestamp,
-                        $lastPage,
+                        $page,
                         $defaultPosSign,
                         ['x' => $x, 'y' => $y],
                         $width,
@@ -453,7 +466,7 @@ class RequestController extends Controller
                     $signer->setAppearance($appearance);
                 }
                 break;
-            case 3:
+            case TipoFirma::TIPO_FIRMA_VISIBLE_DOS:
                 // Dividir la cadena en partes
                 list($page, $x, $y, $width, $height) = explode(',', $posSign);
 
@@ -473,12 +486,15 @@ class RequestController extends Controller
                 // Agrega un campo de firma
                 $field = $signer->addSignatureField(
                     $timestamp,
-                    $lastPage,
+                    $page,
                     $defaultPosSign,
                     ['x' => $x, 'y' => $y],
                     $width,
                     $height
                 );
+
+                // Establece el nombre del campo de firma
+                $signer->setSignatureFieldName($field->getQualifiedName());
 
                 // Decodificar los datos de fondo y gráfico en base64
                 $bgData = base64_decode($backgroundSign);
@@ -598,14 +614,14 @@ class RequestController extends Controller
                     'estampa_usuario' => $userStamp,
                     'estampa_pass' => Hash::make($passStamp),
                     'tipo_firma_id' => $visibleSign,
-                    'firma_imagen' => hash('sha512', $imgData),
+                    'firma_imagen' => ($imgData !== null ? hash('sha512', $imgData) : $imgData),
                     'firma_informacion' => $posSign,
                     'con_grafico' => $graphicSign,
-                    'grafico_imagen' => hash('sha512', $graphData),
-                    'grafico_fondo' => hash('sha512', $bgData),
+                    'grafico_imagen' => ($graphData !== null ? hash('sha512', $graphData) : $graphData),
+                    'grafico_fondo' => ($bgData !== null ? hash('sha512', $bgData) : $bgData),
                     'firma_razon' => $reasonSign,
                     'firma_ubicacion' => $locationSign,
-                    'qr_imagen' => hash('sha512', $qrData),
+                    'qr_imagen' => ($qrData !== null ? hash('sha512', $qrData) : $qrData),
                     'qr_informacion' => $infoQR,
                     'qr_texto' => $txtQR,
                 ]);

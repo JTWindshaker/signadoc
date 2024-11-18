@@ -6,6 +6,7 @@ use App\Helpers\ApiResponse;
 use App\Services\LogService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use SetaPDF_Signer_X509_Certificate as Certificate;
@@ -583,5 +584,29 @@ class PdfSignatureController extends Controller
                 Storage::disk('local')->delete($file);
             }
         }
+    }
+
+    public function listRequests()
+    {
+        $solicitudes = DB::table('solicitud')
+            ->select(
+                'solicitud.id',
+                'solicitud.users_email',
+                'solicitud.estado',
+                'solicitud.fecha_registro',
+                'tipo_firma_id',
+            )->join('solicitud_campo', 'solicitud_campo.solicitud_id', '=', 'solicitud.id')
+            ->orderBy('solicitud.id')
+            ->get();
+
+
+        foreach ($solicitudes as $obj) {
+            $obj->fecha_registro = date("Y-m-d H:i:s", strtotime($obj->fecha_registro));
+        }
+
+        return ApiResponse::success(
+            $solicitudes,
+            'Solicitudes cargadas correctamente'
+        );
     }
 }

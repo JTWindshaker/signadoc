@@ -25,7 +25,7 @@
 
         <div class="mb-3">
             <label for="passP12" class="form-label">Contraseña P12:</label>
-            <input type="text" name="passP12" id="passP12" class="form-control" value="12345678">
+            <input type="text" name="passP12" id="passP12" class="form-control" value="representante_legal_pruebas">
         </div>
 
         <div class="mb-3 form-check">

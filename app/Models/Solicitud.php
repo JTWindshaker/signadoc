@@ -31,6 +31,7 @@ class Solicitud extends Model
     protected $fillable = [
         'hash_documento',
         'users_email',
+        'estado',
     ];
 
     /**

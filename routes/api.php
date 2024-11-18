@@ -56,4 +56,8 @@ Route::middleware(EnsureTokenIsValid::class)->group(function () {
      */
     Route::post('/sign-pdf', [PdfSignatureController::class, 'signPdf'])
         ->name("sign-pdf");
+
+
+    Route::post('/list-request', [PdfSignatureController::class, 'listRequests'])
+        ->name("api.list-request");
 });
