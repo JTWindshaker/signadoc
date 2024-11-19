@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\api;
 
-use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Services\ResponseService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -13,13 +13,18 @@ class AuthController extends Controller
 {
     // Definición de constantes
     public const CODE_ERROR_NO_CORRECT_DATA = 6;
+    protected $responseService;
 
     /**
      * Crear una nueva instancia del controlador.
      *
      * @return void
      */
-    public function __construct() {}
+    public function __construct(
+        ResponseService $responseService,
+    ) {
+        $this->responseService = $responseService;
+    }
 
     /**
      * Inicia sesión un usuario y devuelve un token de autenticación.
@@ -55,19 +60,19 @@ class AuthController extends Controller
                 ]);
         } catch (Throwable $th) {
             // Manejo de errores en la solicitud
-            return ApiResponse::error('Validation failed', 400, $th->getMessage());
+            return $this->responseService->error('Validation failed', 400, $th->getMessage());
         }
 
         // Verificar si la solicitud fue exitosa
         if ($response->successful()) {
             // Retornar los datos de la respuesta (incluyendo el token de acceso) en la respuesta del controlador
-            return ApiResponse::success(
+            return $this->responseService->success(
                 $response->json(),
                 'Login successful'
             );
         } else {
             // Si la solicitud no fue exitosa, retornar un mensaje de error
-            return ApiResponse::error('Invalid email or password', 401);
+            return $this->responseService->error('Invalid email or password', 401);
         }
     }
 }

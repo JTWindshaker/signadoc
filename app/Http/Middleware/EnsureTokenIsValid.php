@@ -21,23 +21,28 @@ class EnsureTokenIsValid
     /**
      * Maneja una solicitud entrante.
      *
-     * Verifica si el token de autenticación es válido utilizando el guardia 'api'.
-     * Si el token no es válido, devuelve una respuesta de error con código 401.
-     * 
-     * @param  \Illuminate\Http\Request  $request  La solicitud entrante que se está procesando.
-     * @param  \Closure  $next  La siguiente acción en la cadena de middleware.
-     * @return \Symfony\Component\HttpFoundation\Response  La respuesta generada por el middleware o la siguiente acción.
+     * Verifica si el token es válido y asocia el usuario autenticado al Request.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Closure  $next
+     * @return \Symfony\Component\HttpFoundation\Response
      */
     public function handle(Request $request, Closure $next): Response
     {
         // Verifica si el token de autenticación es válido
-        if (!Auth::guard('api')->check()) {
-            // Si la autenticación falla, usa el helper para devolver una respuesta de error
+        $guard = Auth::guard('api');
+        if (!$guard->check()) {
+            // Si la autenticación falla, devuelve una respuesta de error
             return ApiResponse::error(
                 'The token provided is invalid or expired. Please provide a valid token and try again.',
                 401
             );
         }
+
+        // Asocia el usuario autenticado al Request
+        $request->setUserResolver(function () use ($guard) {
+            return $guard->user();
+        });
 
         // Continúa con la solicitud si el token es válido
         return $next($request);

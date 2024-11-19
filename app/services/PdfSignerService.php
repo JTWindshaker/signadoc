@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Solicitud;
 use App\Models\SolicitudCampo;
 use App\Models\TipoFirma;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -85,9 +86,10 @@ class PdfSignerService
 
             // Validar que la página existe
             if ($pagQR > $lastPage) {
-                $this->deleteFiles($arrDocs);
-                $logService->log("Page $pagQR dont exist in document.");
-                return $responseService->error("Page $pagQR dont exist in document.", 400);
+                $pagQR = $lastPage;
+                // $this->deleteFiles($arrDocs);
+                // $logService->log("Page $pagQR dont exist in document.");
+                // return $responseService->error("Page $pagQR dont exist in document.", 400);
             }
 
             // Generar imagen QR
@@ -235,9 +237,10 @@ class PdfSignerService
 
                 // Verifica si la página especificada existe
                 if ($page > $lastPage) {
-                    $this->deleteFiles($arrDocs);
-                    $logService->log("Page $page dont exist in document.");
-                    return $responseService->error("Page $page dont exist in document.", 400);
+                    $page = $lastPage;
+                    // $this->deleteFiles($arrDocs);
+                    // $logService->log("Page $page dont exist in document.");
+                    // return $responseService->error("Page $page dont exist in document.", 400);
                 }
 
                 // Decodificar los datos de la imagen en base64
@@ -275,7 +278,8 @@ class PdfSignerService
                     $font = new \SetaPDF_Core_Font_Type0_Subset($document, public_path('fonts/DejaVuSerif-Italic.ttf'));
 
                     // Crea un bloque de texto simple
-                    $textBlock = new \SetaPDF_Core_Text_Block($font, 10);
+                    // $textBlock = new \SetaPDF_Core_Text_Block($font, 10);
+                    $textBlock = new \SetaPDF_Core_Text_Block($font);
                     $textBlock->setTextWidth($width - 70);
                     $textBlock->setLineHeight(11);
                     $textBlock->setPadding(5);
@@ -326,7 +330,8 @@ class PdfSignerService
                     $font = new \SetaPDF_Core_Font_Type0_Subset($document, public_path('fonts/DejaVuSerif-Italic.ttf'));
 
                     // Crea un bloque de texto simple
-                    $textBlock = new \SetaPDF_Core_Text_Block($font, 10);
+                    // $textBlock = new \SetaPDF_Core_Text_Block($font, 10);
+                    $textBlock = new \SetaPDF_Core_Text_Block($font);
                     $textBlock->setTextWidth($width);
                     $textBlock->setLineHeight(11);
                     $textBlock->setPadding(5);
@@ -372,9 +377,10 @@ class PdfSignerService
 
                 // Verifica si la página especificada existe
                 if ($page > $lastPage) {
-                    $this->deleteFiles($arrDocs);
-                    $logService->log("Page $page dont exist in document.");
-                    return $responseService->error("Page $page dont exist in document.", 400);
+                    $page = $lastPage;
+                    // $this->deleteFiles($arrDocs);
+                    // $logService->log("Page $page dont exist in document.");
+                    // return $responseService->error("Page $page dont exist in document.", 400);
                 }
 
                 // Agrega un campo de firma
@@ -508,9 +514,15 @@ class PdfSignerService
             try {
                 DB::beginTransaction();
 
+                if (Auth::check()) {
+                    $user = Auth::user();
+                } else {
+                    $user = $request->user();
+                }
+
                 $objSolicitud = Solicitud::create([
                     'hash_documento' => hash('sha512', $pdfData),
-                    'users_email' => Auth::user()->email,
+                    'users_email' => $user->email,
                     'estado' => true,
                 ]);
 
