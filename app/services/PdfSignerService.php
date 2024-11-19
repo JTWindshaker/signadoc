@@ -16,10 +16,104 @@ use SetaPDF_Signer_X509_Certificate as Certificate;
 use SetaPDF_Signer_X509_Collection as Collection;
 use SetaPDF_Signer_ValidationRelatedInfo_Collector as Collector;
 
+use function PHPUnit\Framework\isEmpty;
+
 class PdfSignerService
 {
     public function signPdf($request, $logService, $responseService)
     {
+        //Validaciones
+        $arrErrores = array();
+
+        if ($request->base64PDF == null || $request->base64PDF == "") {
+            $arrErrores[] = "base64PDF: El b64 del PDF es obligatorio";
+        }
+
+        if ($request->base64P12 == null || $request->base64P12 == "") {
+            $arrErrores[] = "base64P12: El b64 del certificado es obligatorio";
+        }
+
+        if ($request->passP12 == null || $request->passP12 == "") {
+            $arrErrores[] = "passP12: La contraseña del certificado es obligatoria";
+        }
+
+        if ($request->withStamp == null) {
+            $arrErrores[] = "withStamp: La opción 'Con estampa de tiempo' es obligatoria";
+        }
+
+        if (!in_array($request->withStamp, [0, 1])) {
+            $arrErrores[] = "withStamp: El valor de 'Con estampa de tiempo' no es válido. Debe ser 'Sí(0)' o 'No(1)'";
+        }
+
+        if ($request->withStamp == 1) {
+            if ($request->urlStamp == null || $request->urlStamp == "") {
+                $arrErrores[] = "urlStamp: La url de la estampa es obligatoria, cuando 'Con estampa de tiempo' es 'Sí(1)'";
+            } else if (!preg_match('/^(https?:\/\/)?([a-zA-Z0-9.-]+\.[a-zA-Z]{2,6})(:[0-9]{1,5})?(\/.*)?$/', $request->urlStamp)) {
+                $arrErrores[] = "urlStamp: El formato de la url de la estampa es inválido";
+            }
+        }
+
+        if ($request->visibleSign == null || $request->visibleSign == "") {
+            $arrErrores[] = "visibleSign: El tipo de firma es obligatorio";
+        } else if (!in_array((int) $request->visibleSign, [TipoFirma::TIPO_FIRMA_INVISIBLE, TipoFirma::TIPO_FIRMA_VISIBLE, TipoFirma::TIPO_FIRMA_VISIBLE_DOS])) {
+            $arrErrores[] = "visibleSign: El tipo de firma '{$request->visibleSign}' no es válido";
+        }
+
+        if (
+            in_array((int) $request->visibleSign, [TipoFirma::TIPO_FIRMA_VISIBLE, TipoFirma::TIPO_FIRMA_VISIBLE_DOS])
+            && ($request->posSign == null || $request->posSign == "")
+        ) {
+            $arrErrores[] = "posSign: Las propiedades de la firma son obligatorias cuando el tipo de firma son 'Visible(2)' y Visible 2(3)";
+        } else if (
+            in_array((int) $request->visibleSign, [TipoFirma::TIPO_FIRMA_VISIBLE, TipoFirma::TIPO_FIRMA_VISIBLE_DOS])
+            && ($request->posSign != null && $request->posSign != "") && !preg_match('/^\d+,\d+,\d+,\d+,\d+$/', $request->posSign)
+        ) {
+            $arrErrores[] = "posSign: El formato de las propiedades de la firma es inválido. Debe ser pag,x,y,width,height";
+        }
+
+        if (
+            (int) $request->visibleSign == TipoFirma::TIPO_FIRMA_VISIBLE_DOS
+            && ($request->graphicSign == null || $request->graphicSign == "")
+        ) {
+            $arrErrores[] = "graphicSign: La opción 'Con firma gráfica' es obligatoria cuando el tipo de firma es Visible 2(3)";
+        } else if (
+            (int) $request->visibleSign == TipoFirma::TIPO_FIRMA_VISIBLE_DOS
+            && !in_array($request->graphicSign, [0, 1])
+        ) {
+            $arrErrores[] = "graphicSign: El valor de 'Con firma gráfica' no es válido. Debe ser 'Sí(0)' o 'No(1)'";
+        }
+
+        if (
+            (int) $request->visibleSign == TipoFirma::TIPO_FIRMA_VISIBLE_DOS
+            && $request->graphicSign == 1
+            && ($request->base64GraphicSign == null || $request->base64GraphicSign == "")
+        ) {
+            $arrErrores[] = "base64GraphicSign: La imágen gráfica de la firma es obligatoria cuando el tipo de firma es Visible 2(3) y la opción 'Con firma gráfica' es 'Sí(1)'";
+        }
+
+        if (
+            ($request->txtQR != null && $request->txtQR != "")
+            && ($request->infoQR == null || $request->infoQR == "")
+        ) {
+            $arrErrores[] = "infoQR: Las propiedades del código QR son obligatorias cuando el texto del QR(txtQR) no es vacío";
+        } else if (
+            ($request->infoQR != null && $request->infoQR != "")
+            && !preg_match('/^\d+,\d+,\d+,\d+$/', $request->infoQR)
+        ) {
+            $arrErrores[] = "infoQR: El formato de las propiedades del código QR es inválido. Debe ser pag,x,y,size";
+        }
+
+        if (
+            ($request->infoQR != null && $request->infoQR != "")
+            && ($request->txtQR == null || $request->txtQR == "")
+        ) {
+            $arrErrores[] = "txtQR: El texto del QR es obligatorio cuando las propiedades(infoQR) no están vacías";
+        }
+
+        if (count($arrErrores) > 0) {
+            return $responseService->error("Error en el proceso de validación", 400, $arrErrores);
+        }
+
         // Obtener los datos de entrada
         $base64PDF = $request->base64PDF;
         $base64P12 = $request->base64P12;
@@ -67,7 +161,15 @@ class PdfSignerService
 
         // Cargar documento PDF
         $writer = new \SetaPDF_Core_Writer_String();
-        $document = \SetaPDF_Core_Document::loadByFilename(public_path('storage/' . $pdfFilename), $writer);
+
+        try {
+            $document = \SetaPDF_Core_Document::loadByFilename(public_path('storage/' . $pdfFilename), $writer);
+        } catch (\SetaPDF_Core_Parser_CrossReferenceTable_Exception $th) {
+            $this->deleteFiles($arrDocs);
+            $logService->log($th->getMessage());
+            return $responseService->error('Invalid base64PDF', 400, $th->getMessage());
+        }
+
         $lastPage = $document->getCatalog()->getPages()->count();
         $width = $document->getCatalog()->getPages()->getPage($lastPage)->getWidth();
         $height = $document->getCatalog()->getPages()->getPage($lastPage)->getHeight();

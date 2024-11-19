@@ -3,7 +3,7 @@
 =========================================
 
 *Cambios:*
--- Ajuste en la fuente automático en el firmado visible
+-- Ajuste en las validaciones tanto del Api como para la Web
 
 *Notas/Observaciones:*
 -- 

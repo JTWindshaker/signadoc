@@ -14,47 +14,47 @@
         @csrf
 
         <div class="mb-3">
-            <label for="base64PDF" class="form-label">PDF:</label>
+            <label for="base64PDF" class="form-label">Archivo PDF:</label>
             <input type="file" name="base64PDF" id="base64PDF" class="form-control" accept=".pdf">
         </div>
 
         <div class="mb-3">
-            <label for="base64P12" class="form-label">P12:</label>
+            <label for="base64P12" class="form-label">Certificado (.p12):</label>
             <input type="file" name="base64P12" id="base64P12" class="form-control" accept=".p12">
         </div>
 
         <div class="mb-3">
-            <label for="passP12" class="form-label">Contraseña P12:</label>
+            <label for="passP12" class="form-label">Contraseña Certificado:</label>
             <input type="text" name="passP12" id="passP12" class="form-control"
-                value="representante_legal_pruebas">
+                value="">
         </div>
 
         <div class="mb-3 form-check">
             <input type="checkbox" name="withStamp" id="withStamp" class="form-check-input" checked>
-            <label for="withStamp" class="form-check-label">Con Sello</label>
+            <label for="withStamp" class="form-check-label">Con estampa de tiempo</label>
         </div>
 
         <div class="mb-3">
-            <label for="urlStamp" class="form-label">URL Sello:</label>
-            <input type="text" name="urlStamp" id="urlStamp" class="form-control" value="tsa.andesscd.com.co">
+            <label for="urlStamp" class="form-label">URL estampa:</label>
+            <input type="text" name="urlStamp" id="urlStamp" class="form-control" value="">
         </div>
 
         <div class="mb-3">
-            <label for="userStamp" class="form-label">Usuario Sello:</label>
-            <input type="text" name="userStamp" id="userStamp" class="form-control" value="usuariointerno">
+            <label for="userStamp" class="form-label">Usuario estampa:</label>
+            <input type="text" name="userStamp" id="userStamp" class="form-control" value="">
         </div>
 
         <div class="mb-3">
-            <label for="passStamp" class="form-label">Contraseña Sello:</label>
-            <input type="text" name="passStamp" id="passStamp" class="form-control" value="5QlC3Bm2">
+            <label for="passStamp" class="form-label">Contraseña estampa:</label>
+            <input type="text" name="passStamp" id="passStamp" class="form-control" value="">
         </div>
 
         <div class="mb-3">
-            <label for="visibleSign" class="form-label">Visibilidad Firma:</label>
+            <label for="visibleSign" class="form-label">Tipo de firma:</label>
             <select name="visibleSign" id="visibleSign" class="form-select">
                 <option value="1">Invisible</option>
                 <option value="2" selected>Visible</option>
-                <option value="3">Visible dos</option>
+                <option value="3">Visible 2</option>
             </select>
         </div>
 
@@ -66,28 +66,28 @@
         <h3>Posición de Firma</h3>
         <div class="mb-3">
             <label for="pageSign" class="form-label">Página:</label>
-            <input type="text" name="pageSign" id="pageSign" class="form-control" value="1">
+            <input type="text" name="pageSign" id="pageSign" class="form-control" value="">
         </div>
         <div class="mb-3">
             <label for="xSign" class="form-label">X:</label>
-            <input type="text" name="xSign" id="xSign" class="form-control" value="50">
+            <input type="text" name="xSign" id="xSign" class="form-control" value="">
         </div>
         <div class="mb-3">
             <label for="ySign" class="form-label">Y:</label>
-            <input type="text" name="ySign" id="ySign" class="form-control" value="50">
+            <input type="text" name="ySign" id="ySign" class="form-control" value="">
         </div>
         <div class="mb-3">
             <label for="widthSign" class="form-label">Ancho:</label>
-            <input type="text" name="widthSign" id="widthSign" class="form-control" value="180">
+            <input type="text" name="widthSign" id="widthSign" class="form-control" value="">
         </div>
         <div class="mb-3">
             <label for="heightSign" class="form-label">Alto:</label>
-            <input type="text" name="heightSign" id="heightSign" class="form-control" value="60">
+            <input type="text" name="heightSign" id="heightSign" class="form-control" value="">
         </div>
 
         <div class="mb-3 form-check">
             <input type="checkbox" name="graphicSign" id="graphicSign" class="form-check-input" checked>
-            <label for="graphicSign" class="form-check-label">Firma Gráfica</label>
+            <label for="graphicSign" class="form-check-label">Con Firma Gráfica</label>
         </div>
 
         <div class="mb-3">
@@ -102,37 +102,37 @@
         </div>
 
         <div class="mb-3">
-            <label for="reasonSign" class="form-label">Razón de Firma:</label>
-            <input type="text" name="reasonSign" id="reasonSign" class="form-control" value="Razon Test">
+            <label for="reasonSign" class="form-label">Razón:</label>
+            <input type="text" name="reasonSign" id="reasonSign" class="form-control" value="">
         </div>
 
         <div class="mb-3">
-            <label for="locationSign" class="form-label">Ubicación de Firma:</label>
+            <label for="locationSign" class="form-label">Ubicación:</label>
             <input type="text" name="locationSign" id="locationSign" class="form-control"
-                value="Ubicacion Test">
+                value="">
         </div>
 
         <h3>QR Code</h3>
         <div class="mb-3">
             <label for="qrPage" class="form-label">Página:</label>
-            <input type="text" name="qrPage" id="qrPage" class="form-control" value="1">
+            <input type="text" name="qrPage" id="qrPage" class="form-control" value="">
         </div>
         <div class="mb-3">
             <label for="qrX" class="form-label">X:</label>
-            <input type="text" name="qrX" id="qrX" class="form-control" value="0">
+            <input type="text" name="qrX" id="qrX" class="form-control" value="">
         </div>
         <div class="mb-3">
             <label for="qrY" class="form-label">Y:</label>
-            <input type="text" name="qrY" id="qrY" class="form-control" value="0">
+            <input type="text" name="qrY" id="qrY" class="form-control" value="">
         </div>
         <div class="mb-3">
             <label for="qrSize" class="form-label">Tamaño QR:</label>
-            <input type="text" name="qrSize" id="qrSize" class="form-control" value="100">
+            <input type="text" name="qrSize" id="qrSize" class="form-control" value="">
         </div>
 
         <div class="mb-3">
             <label for="txtQR" class="form-label">Texto QR:</label>
-            <input type="text" name="txtQR" id="txtQR" class="form-control" value="QR desde Web">
+            <input type="text" name="txtQR" id="txtQR" class="form-control" value="">
         </div>
 
         <button type="button" id="submitForm" class="btn btn-primary">Enviar</button>
