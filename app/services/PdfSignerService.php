@@ -278,10 +278,8 @@ class PdfSignerService
                     $font = new \SetaPDF_Core_Font_Type0_Subset($document, public_path('fonts/DejaVuSerif-Italic.ttf'));
 
                     // Crea un bloque de texto simple
-                    // $textBlock = new \SetaPDF_Core_Text_Block($font, 10);
                     $textBlock = new \SetaPDF_Core_Text_Block($font);
-                    $textBlock->setTextWidth($width - 70);
-                    $textBlock->setLineHeight(11);
+                    $textBlock->setTextWidth($width - 10);
                     $textBlock->setPadding(5);
 
                     // Obtiene la información específica del certificado
@@ -299,6 +297,32 @@ class PdfSignerService
                         . date('Y/m/d H:i:s');
 
                     $textBlock->setText($text);
+
+                    $matchingFontSize = null;
+                    $diff = $textBlock->getFontSize() / 2;
+                    $fontSize = $textBlock->getFontSize();
+                    $currentHeight = $textBlock->getTextHeight();
+
+                    while ($diff > .01) {
+                        if ($currentHeight > $height) {
+                            $fontSize -= $diff;
+                        } else {
+                            $fontSize += $diff;
+                        }
+
+                        $diff /= 2;
+                        $textBlock->setFontSize($fontSize);
+
+                        $currentHeight = $textBlock->getTextHeight();
+                        if ($currentHeight <= $height) {
+                            $matchingFontSize = $fontSize;
+                        }
+                    }
+
+                    if ($matchingFontSize !== $fontSize) {
+                        $textBlock->setFontSize($matchingFontSize);
+                    }
+
                     $textBlock->draw($canvas, 0, $height / 2 - $textBlock->getHeight() / 2);
 
                     // Crea una instancia de apariencia XObject
@@ -330,10 +354,8 @@ class PdfSignerService
                     $font = new \SetaPDF_Core_Font_Type0_Subset($document, public_path('fonts/DejaVuSerif-Italic.ttf'));
 
                     // Crea un bloque de texto simple
-                    // $textBlock = new \SetaPDF_Core_Text_Block($font, 10);
                     $textBlock = new \SetaPDF_Core_Text_Block($font);
-                    $textBlock->setTextWidth($width);
-                    $textBlock->setLineHeight(11);
+                    $textBlock->setTextWidth($width - 5);
                     $textBlock->setPadding(5);
 
                     // Obtiene la información específica del certificado
@@ -342,6 +364,32 @@ class PdfSignerService
                         . (isset($certificateInfo['subject']['CN']) ? $certificateInfo['subject']['CN'] : $signer->getName()) . "\n"
                         . date('Y/m/d H:i:s');
                     $textBlock->setText($text);
+
+                    $matchingFontSize = null;
+                    $diff = $textBlock->getFontSize() / 2;
+                    $fontSize = $textBlock->getFontSize();
+                    $currentHeight = $textBlock->getTextHeight();
+
+                    while ($diff > .01) {
+                        if ($currentHeight > $height) {
+                            $fontSize -= $diff;
+                        } else {
+                            $fontSize += $diff;
+                        }
+
+                        $diff /= 2;
+                        $textBlock->setFontSize($fontSize);
+
+                        $currentHeight = $textBlock->getTextHeight();
+                        if ($currentHeight <= $height) {
+                            $matchingFontSize = $fontSize;
+                        }
+                    }
+
+                    if ($matchingFontSize !== $fontSize) {
+                        $textBlock->setFontSize($matchingFontSize);
+                    }
+
                     $textBlock->draw($canvas, 0, $height / 2 - $textBlock->getHeight() / 2);
 
                     // Crea una instancia de apariencia XObject

@@ -1,9 +1,9 @@
 =========================================
-============= *Ready 18/11/2024* ============
+============= *Ready 19/11/2024* ============
 =========================================
 
 *Cambios:*
--- PARTE 2 de la estructuración del método de firma para web y API.
+-- Ajuste en la fuente automático en el firmado visible
 
 *Notas/Observaciones:*
 -- 
