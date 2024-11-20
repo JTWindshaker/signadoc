@@ -6,7 +6,7 @@
 -- Ajustes en los métodos y limpieza de código
 
 *Notas/Observaciones:*
--- Se ajustan las excepciones de 404(endpoint inexistente) y 405(ruta con un método erróneo) para controlarlas.
+-- Se ajusta el método de las solicitudes, no se estaba filtrando por el usuario.
 
 *SQL:*
 --

@@ -24,6 +24,8 @@ class RequestController extends Controller
 
     public function listRequests(Request $request)
     {
+        $user = $request->user();
+
         $solicitudes = DB::table('solicitud')
             ->select(
                 'solicitud.id',
@@ -32,6 +34,7 @@ class RequestController extends Controller
                 'solicitud.fecha_registro',
                 'tipo_firma_id',
             )->join('solicitud_campo', 'solicitud_campo.solicitud_id', '=', 'solicitud.id')
+            ->where("solicitud.users_email", $user->email)
             ->orderBy('solicitud.id')
             ->get();
 
@@ -48,6 +51,8 @@ class RequestController extends Controller
 
     public function fieldsRequest(Request $request, $idRequest)
     {
+        $user = $request->user();
+
         $solicitud = DB::table('solicitud')
             ->select(
                 'solicitud.hash_documento',
@@ -57,11 +62,20 @@ class RequestController extends Controller
                 'tipo_firma_id',
                 'solicitud_campo.*'
             )->join('solicitud_campo', 'solicitud_campo.solicitud_id', '=', 'solicitud.id')
-            ->where("solicitud.id", $idRequest)
-            ->first();
+            ->where([
+                ["solicitud.id", $idRequest],
+                ["solicitud.users_email", $user->email],
+            ])->first();
 
-
-        $solicitud->fecha_registro = date("Y-m-d H:i:s", strtotime($solicitud->fecha_registro));
+        if ($solicitud) {
+            $solicitud->fecha_registro = date("Y-m-d H:i:s", strtotime($solicitud->fecha_registro));
+        } else {
+            return $this->responseService->error(
+                $solicitud,
+                204,
+                'La solicitud no pertenece al usuario'
+            );
+        }
 
         return $this->responseService->success(
             $solicitud,
