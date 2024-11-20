@@ -1,12 +1,12 @@
 =========================================
-============= *Ready 19/11/2024* ============
+============= *Ready 20/11/2024* ============
 =========================================
 
 *Cambios:*
--- Ajuste en las validaciones tanto del Api como para la Web
+-- Ajustes en los métodos y limpieza de código
 
 *Notas/Observaciones:*
--- 
+-- Se ajustan las excepciones de 404(endpoint inexistente) y 405(ruta con un método erróneo) para controlarlas.
 
 *SQL:*
 --

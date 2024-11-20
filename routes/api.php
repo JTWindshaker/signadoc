@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\api\AuthController;
 use App\Http\Controllers\api\PdfSignatureController;
+use App\Http\Controllers\api\RequestController;
 use App\Http\Middleware\EnsureTokenIsValid;
 use Illuminate\Support\Facades\Route;
 
@@ -55,9 +56,13 @@ Route::middleware(EnsureTokenIsValid::class)->group(function () {
      * Respuesta de error: 401 Unauthorized si las credenciales son incorrectas
      */
     Route::post('/sign-pdf', [PdfSignatureController::class, 'signPdf'])
-        ->name("sign-pdf");
+        ->name("api.sign-pdf");
 
 
-    Route::post('/list-request', [PdfSignatureController::class, 'listRequests'])
+    Route::post('/list-request', [RequestController::class, 'listRequests'])
         ->name("api.list-request");
+
+    Route::post('/request/{idRequest}/fields', [RequestController::class, 'fieldsRequest'])
+        ->name("api.request.fields")
+        ->whereNumber('idRequest');
 });

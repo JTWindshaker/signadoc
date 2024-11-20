@@ -2,8 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\ResponseService;
 use Closure;
-use App\Helpers\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
@@ -18,6 +18,19 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class EnsureTokenIsValid
 {
+    protected $responseService;
+
+    /**
+     * Instantiate a new controller instance.
+     *
+     * @return void
+     */
+    public function __construct(
+        ResponseService $responseService
+    ) {
+        $this->responseService = $responseService;
+    }
+
     /**
      * Maneja una solicitud entrante.
      *
@@ -33,7 +46,7 @@ class EnsureTokenIsValid
         $guard = Auth::guard('api');
         if (!$guard->check()) {
             // Si la autenticación falla, devuelve una respuesta de error
-            return ApiResponse::error(
+            return $this->responseService->error(
                 'The token provided is invalid or expired. Please provide a valid token and try again.',
                 401
             );

@@ -1,15 +1,10 @@
 <?php
 
-namespace App\Helpers;
+namespace App\Services;
 
-/**
- * Clase de ayuda para generar respuestas API uniformes.
- *
- * Proporciona métodos para generar respuestas consistentes para solicitudes exitosas y fallidas.
- * 
- * @package App\Helpers
- */
-class ApiResponse
+use Illuminate\Http\JsonResponse;
+
+class ResponseService
 {
     /**
      * Genera una respuesta de éxito.
@@ -17,12 +12,13 @@ class ApiResponse
      * @param array $data Datos opcionales a incluir en la respuesta.
      * @param string $message Mensaje opcional a incluir en la respuesta.
      * 
-     * @return \Illuminate\Http\JsonResponse Respuesta JSON con el estado de éxito.
+     * @return JsonResponse Respuesta JSON con el estado de éxito.
      */
-    public static function success($data = [], $message = 'The request has been processed successfully')
+    public function success($data = [], $message = 'The request has been processed successfully'): JsonResponse
     {
         return response()->json([
             'status' => 'success',
+            'success' => true,
             'code' => 200,
             'data' => $data,
             'message' => $message
@@ -36,12 +32,13 @@ class ApiResponse
      * @param int $code Código de estado HTTP para la respuesta de error.
      * @param array|null $errors Errores adicionales a incluir en la respuesta.
      * 
-     * @return \Illuminate\Http\JsonResponse Respuesta JSON con el estado de error.
+     * @return JsonResponse Respuesta JSON con el estado de error.
      */
-    public static function error($message = 'There was an error processing the request', $code = 400, $errors = null)
+    public function error($message = 'There was an error processing the request', $code = 400, $errors = null): JsonResponse
     {
         return response()->json([
             'status' => 'error',
+            'success' => false,
             'code' => $code,
             'data' => null,
             'message' => $message,
@@ -54,10 +51,10 @@ class ApiResponse
      *
      * @param string $message Mensaje opcional a incluir en la respuesta de error.
      * 
-     * @return \Illuminate\Http\JsonResponse Respuesta JSON con el estado de error 404.
+     * @return JsonResponse Respuesta JSON con el estado de error 404.
      */
-    public static function notFound($message = 'Resource not found')
+    public function notFound($message = 'Resource not found'): JsonResponse
     {
-        return self::error($message, 404);
+        return $this->error($message, 404);
     }
 }

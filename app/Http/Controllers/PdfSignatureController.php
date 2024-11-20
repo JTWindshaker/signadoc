@@ -7,7 +7,6 @@ use App\Services\PdfSignerService;
 use App\Services\ResponseService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Throwable;
 
 class PdfSignatureController extends Controller
 {
