@@ -1,12 +1,12 @@
 =========================================
-============= *Ready 20/11/2024* ============
+============= *Ready 22/11/2024* ============
 =========================================
 
 *Cambios:*
--- Ajustes en los métodos y limpieza de código
+-- Control general del error en base de datos de la respuesta al cliente
 
 *Notas/Observaciones:*
--- Se ajusta el método de las solicitudes, no se estaba filtrando por el usuario.
+-- 
 
 *SQL:*
 --

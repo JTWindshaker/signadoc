@@ -710,7 +710,7 @@ class PdfSignerService
 
                 // En caso de error, elimina archivos temporales y retorna un error
                 $this->deleteFiles($arrDocs);
-                return $responseService->error("Error en el registro de la solicitud.", 400, $e->getMessage() . '. Line: ' . $e->getLine());
+                return $responseService->error("Error en el registro de la solicitud.", 400, "Hubo un error en el registro de base de datos.");
             }
         } catch (\SetaPDF_Signer_Exception $th) {
             $logService->log("Error en el proceso");
