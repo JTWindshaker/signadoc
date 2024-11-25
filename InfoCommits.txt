@@ -1,9 +1,9 @@
 =========================================
-============= *Ready 22/11/2024* ============
+============= *Ready 25/11/2024* ============
 =========================================
 
 *Cambios:*
--- Control general del error en base de datos de la respuesta al cliente
+-- Validación de certificados vencidos
 
 *Notas/Observaciones:*
 -- 
