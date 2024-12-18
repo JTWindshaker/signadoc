@@ -45,6 +45,7 @@ class PdfSignatureController extends Controller
         return view('request');
     }
 
+
     public function listRequests()
     {
         $solicitudes = DB::table('solicitud')

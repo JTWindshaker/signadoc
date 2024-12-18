@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PdfSignatureController;
+use App\Http\Controllers\TemplateController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login.showLoginForm');
@@ -44,6 +45,17 @@ Route::middleware(['auth'])->group(function () {
      */
     Route::post('/sign', [PdfSignatureController::class, 'signPdf'])->name("sign");
 
+    /* Solicitudes */
     Route::get('/request', [PdfSignatureController::class, 'requestView'])->name('request');
     Route::post('/list-request', [PdfSignatureController::class, 'listRequests'])->name('list-request');
+
+    /* Plantillas */
+    Route::get('/template', [TemplateController::class, 'templateView'])->name('template');
+    Route::post('/template/list-templates', [TemplateController::class, 'listTemplates'])->name('list-templates');
+    Route::post('/template/create', [TemplateController::class, 'templateCreate'])->name('template.create');
+    Route::post('/template/delete', [TemplateController::class, 'templateDelete'])->name('template.delete');
+    Route::get('/edit-template/{id}', [TemplateController::class, 'editTemplateView'])->name('edit-template');
+    Route::post('/edit-template/list-fields', [TemplateController::class, 'listFields'])->name('list-fields');
+    Route::post('/edit-template/load-template', [TemplateController::class, 'loadTemplate'])->name('load-template');
+    Route::post('/edit-template/save-template', [TemplateController::class, 'saveTemplate'])->name('save-template');
 });

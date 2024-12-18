@@ -39,7 +39,7 @@ class PdfSignerService
         }
 
         if (!in_array($request->withStamp, [0, 1])) {
-            $arrErrores[] = "withStamp: El valor de 'Con estampa de tiempo' no es válido. Debe ser 'Sí(0)' o 'No(1)'";
+            $arrErrores[] = "withStamp: El valor de 'Con estampa de tiempo' no es válido. Debe ser 'Sí(1)' o 'No(0)'";
         }
 
         if ($request->withStamp == 1) {
@@ -77,7 +77,7 @@ class PdfSignerService
             (int) $request->visibleSign == TipoFirma::TIPO_FIRMA_VISIBLE_DOS
             && !in_array($request->graphicSign, [0, 1])
         ) {
-            $arrErrores[] = "graphicSign: El valor de 'Con firma gráfica' no es válido. Debe ser 'Sí(0)' o 'No(1)'";
+            $arrErrores[] = "graphicSign: El valor de 'Con firma gráfica' no es válido. Debe ser 'Sí(1)' o 'No(0)'";
         }
 
         if (
@@ -256,6 +256,29 @@ class PdfSignerService
             $this->deleteFiles($arrDocs);
             $logService->log("No se pudo leer la clave privada.");
             return $responseService->error('No se pudo leer la clave privada.', 400);
+        }
+
+        // Verifica la fecha de validez del certificado
+        try {
+            $certificateInfoValidation = openssl_x509_parse($certContent);
+
+            $validFrom_time_t = $certificateInfoValidation["validFrom_time_t"];
+            $validTo_time_t = $certificateInfoValidation["validTo_time_t"];
+            $current_time = time();
+
+            $validFrom_readable = date('Y-m-d H:i:s', $validFrom_time_t);
+            $validTo_readable = date('Y-m-d H:i:s', $validTo_time_t);
+            $current_readable = date('Y-m-d H:i:s', $current_time);
+
+            if ($current_time < $validFrom_time_t || $current_time > $validTo_time_t) {
+                $this->deleteFiles($arrDocs);
+                $logService->log("El certificado se encuentra vencido");
+                return $responseService->error('El certificado se encuentra vencido', 400);
+            }
+        } catch (\Throwable $th) {
+            $this->deleteFiles($arrDocs);
+            $logService->log("Hubo un error en la validación de la fecha del certificado");
+            return $responseService->error('Hubo un error en la validación de la fecha del certificado', 400);
         }
 
         // Crea un módulo de firma para PDF utilizando la clase SetaPDF_Signer_Signature_Module_Pades

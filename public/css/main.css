@@ -1,0 +1,203 @@
+/* ========================
+   Global Styles (CSS Variables)
+   ======================== */
+
+/* Variables para el tema claro (por defecto) */
+:root {
+    --color-primary: #007BFF;
+    --color-secondary: #6C757D;
+    --color-background-light: #F4F4F4;
+    --color-text-light: #333333;
+    --color-form-background: #FFFFFF;
+    --color-button-hover: #0056B3;
+    --color-button-active: #004085;
+    --color-button-disabled-background: #C6D4E1;
+    --color-button-disabled-border: #B8C6D2;
+    --color-link: #007BFF;
+    --color-link-hover: #0056B3;
+
+    /* Breakpoints */
+    --breakpoint-xs: 0px;
+    --breakpoint-sm: 576px;
+    --breakpoint-md: 768px;
+    --breakpoint-lg: 992px;
+    --breakpoint-xl: 1200px;
+    --breakpoint-xxl: 1400px;
+
+    /* Font size */
+    --font-size-base: 16px;
+}
+
+/* Variables para el tema oscuro */
+body.dark-mode {
+    --color-primary: #0056B3;
+    --color-secondary: #495057;
+    --color-background-light: #212529;
+    --color-text-light: #E9ECEF;
+    --color-form-background: #343A40;
+    --color-button-hover: #004085;
+    --color-button-active: #003366;
+    --color-button-disabled-background: #6C757D;
+    --color-button-disabled-border: #5A6268;
+    --color-link: #5CB85C;
+    --color-link-hover: #4CAE4C;
+}
+
+/* ========================
+   Global Styles
+   ======================== */
+
+/* Reset de estilos por defecto */
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    font-size: var(--font-size-base);
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    font-size: 1rem;
+    background-color: var(--color-background-light);
+    color: var(--color-text-light);
+    line-height: 1.6;
+}
+
+html,
+body {
+    height: 100%;
+    margin: 0;
+}
+
+.hidden{
+    display: none !important;
+}
+
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* ========================
+   Typography
+   ======================== */
+
+h2 {
+    color: var(--color-primary);
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+/* ========================
+   Buttons & Controls
+   ======================== */
+
+button {
+    font-size: 1rem;
+    padding: 10px 20px;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+    background-color: var(--color-primary);
+    color: white;
+    transition: background-color 0.3s ease;
+}
+
+.btn-primary {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.btn-primary:hover {
+    background-color: var(--color-button-hover);
+    border-color: var(--color-button-hover);
+}
+
+/* ========================
+   Layout
+   ======================== */
+
+form {
+    background-color: var(--color-form-background);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* ========================
+   States & Interactions
+   ======================== */
+
+.btn-primary:active {
+    background-color: var(--color-button-active);
+    border-color: var(--color-button-active);
+}
+
+.btn-primary:disabled {
+    background-color: var(--color-button-disabled-background);
+    border-color: var(--color-button-disabled-border);
+    cursor: not-allowed;
+}
+
+a {
+    text-decoration: none;
+    color: var(--color-link);
+    transition: color 0.3s ease;
+}
+
+a:hover {
+    color: var(--color-link-hover);
+}
+
+/* ========================
+   Responsive Design (Media Queries)
+   ======================== */
+
+@media (min-width: var(--breakpoint-sm)) {
+    /* Aquí puedes agregar reglas específicas para dispositivos de tamaño 'sm' (576px y más) */
+}
+
+@media (min-width: var(--breakpoint-md)) {
+    /* Reglas para dispositivos 'md' (768px y más) */
+}
+
+@media (min-width: var(--breakpoint-lg)) {
+    /* Reglas para dispositivos 'lg' (992px y más) */
+}
+
+@media (min-width: var(--breakpoint-xl)) {
+    /* Reglas para dispositivos 'xl' (1200px y más) */
+}
+
+@media (min-width: var(--breakpoint-xxl)) {
+    /* Reglas para dispositivos 'xxl' (1400px y más) */
+}

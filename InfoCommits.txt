@@ -1,12 +1,61 @@
 =========================================
-============= *Ready 22/11/2024* ============
+============= *Ready 18/12/2024* ============
 =========================================
 
 *Cambios:*
--- Control general del error en base de datos de la respuesta al cliente
+-- Ajustes Visuales y configuración de la estructura de datos (DB) de plantilla y sus campos
 
 *Notas/Observaciones:*
 -- 
 
 *SQL:*
---
+#Se crea la tabla plantilla
+CREATE TABLE plantilla (
+    id SERIAL PRIMARY KEY,
+    empresa_id INT NOT NULL REFERENCES empresa(id),
+    nombre VARCHAR(50) NOT NULL,
+    ruta VARCHAR(100) NOT NULL,
+    descripcion VARCHAR(150),
+    estado BOOLEAN NOT NULL DEFAULT FALSE,
+    fecha_registro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+#Se crea la tabla tipo_campo
+CREATE TABLE tipo_campo (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(20) NOT NULL,
+    estado BOOLEAN NOT NULL DEFAULT FALSE,
+    fecha_registro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+#Se crea la tabla campo
+CREATE TABLE campo (
+    id SERIAL PRIMARY KEY,
+    tipo_campo_id INT NOT NULL REFERENCES tipo_campo(id),
+    nombre VARCHAR(30) NOT NULL,
+    propiedades JSONB NOT NULL,
+    estado BOOLEAN NOT NULL DEFAULT FALSE,
+    fecha_registro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+#Se crea la tabla plantilla_campo
+CREATE TABLE plantilla_campo (
+    id SERIAL PRIMARY KEY,
+    plantilla_id INT NOT NULL REFERENCES plantilla(id),
+    campo_id INT NOT NULL REFERENCES campo(id),
+    pagina INT NOT NULL,
+    propiedades JSONB NOT NULL
+);
+
+#Se crean los tipos de campos que usaremos para empezar
+INSERT INTO tipo_campo (nombre, estado, fecha_registro) VALUES
+('text', TRUE, CURRENT_TIMESTAMP),
+('select', TRUE, CURRENT_TIMESTAMP),
+('qr', TRUE, CURRENT_TIMESTAMP);
+
+#Se crean los campos que usaremos para empezar
+INSERT INTO campo (tipo_campo_id, nombre, propiedades, estado, fecha_registro) 
+VALUES 
+(1, 'Nombre completo', '{"align":"left","draggable":true,"fill":"#112752","fontFamily":"Times New Roman","fontSize":14,"fontStyle":"normal","height":14,"id":1,"idField":1,"isEditable":true,"lineHeight":1,"maxChar":50,"name":"Nombre Completo","padding":0,"text":"Nombre Completo","textDecoration":"empty string","type":"text","verticalAlign":"bottom","width":150,"wrap":"word","x":50,"y":50}', true, CURRENT_TIMESTAMP),
+(2, 'Tipo de cliente', '{"align":"left","draggable":true,"fill":"#112752","fontFamily":"Times New Roman","fontSize":14,"fontStyle":"normal","id":2,"idField":2,"isEditable":true,"lineHeight":1,"name":"Tipo de Cliente","options":[{"id":0,"name":"-- Seleccione --"}],"padding":0,"text":"-- Seleccione --","textDecoration":"empty string","type":"select","value":"0","verticalAlign":"bottom","width":200,"wrap":"word","x":50,"y":50}', true, CURRENT_TIMESTAMP),
+(3, 'QR', '{"draggable":true,"height":100,"id":3,"idField":3,"image":"","isEditable":true,"name":"qr","opacity":1,"rotation":0,"src":"","type":"image","width":100,"x":50,"y":50}', true, CURRENT_TIMESTAMP);
