@@ -108,6 +108,9 @@ class PdfSignerService
         }
 
         if (count($arrErrores) > 0) {
+            $logService->log("Error en el proceso de validación");
+            $logService->log(implode(".\n", $arrErrores));
+            $logService->log("Proceso finalizado", false, true);
             return $responseService->error("Error en el proceso de validación", 400, $arrErrores);
         }
 
@@ -163,7 +166,9 @@ class PdfSignerService
             $document = \SetaPDF_Core_Document::loadByFilename(public_path('storage/' . $pdfFilename), $writer);
         } catch (\SetaPDF_Core_Parser_CrossReferenceTable_Exception $th) {
             $this->deleteFiles($arrDocs);
+            $logService->log("Base 64 del PDF inválido");
             $logService->log($th->getMessage());
+            $logService->log("Proceso finalizado", false, true);
             return $responseService->error('Invalid base64PDF', 400, $th->getMessage());
         }
 
@@ -225,7 +230,9 @@ class PdfSignerService
         // Verificar contenido del certificado
         if (!$certContent) {
             $this->deleteFiles($arrDocs);
-            $logService->log("Invalid certificate content");
+            $logService->log("Contenido del certificado inválido");
+            $logService->log($th->errors());
+            $logService->log("Proceso finalizado", false, true);
             return $responseService->error('Invalid certificate content', 400, $th->errors());
         }
 
@@ -235,6 +242,7 @@ class PdfSignerService
             if (!openssl_pkcs12_read($certContent, $pkcs12, $passP12)) {
                 $this->deleteFiles($arrDocs);
                 $logService->log("No se pudo leer el certificado PKCS#12. Verifica la contraseña.");
+                $logService->log("Proceso finalizado", false, true);
                 return $responseService->error('No se pudo leer el certificado PKCS#12. Verifica la contraseña.', 400);
             }
             $certContent = $pkcs12['cert'];
@@ -248,6 +256,7 @@ class PdfSignerService
         if (!$certContent) {
             $this->deleteFiles($arrDocs);
             $logService->log("No se pudo leer el certificado X.509.");
+            $logService->log("Proceso finalizado", false, true);
             return $responseService->error('No se pudo leer el certificado X.509.', 400);
         }
 
@@ -255,6 +264,7 @@ class PdfSignerService
         if (!$privateKey) {
             $this->deleteFiles($arrDocs);
             $logService->log("No se pudo leer la clave privada.");
+            $logService->log("Proceso finalizado", false, true);
             return $responseService->error('No se pudo leer la clave privada.', 400);
         }
 
@@ -273,11 +283,13 @@ class PdfSignerService
             if ($current_time < $validFrom_time_t || $current_time > $validTo_time_t) {
                 $this->deleteFiles($arrDocs);
                 $logService->log("El certificado se encuentra vencido");
+                $logService->log("Proceso finalizado", false, true);
                 return $responseService->error('El certificado se encuentra vencido', 400);
             }
         } catch (\Throwable $th) {
             $this->deleteFiles($arrDocs);
             $logService->log("Hubo un error en la validación de la fecha del certificado");
+            $logService->log("Proceso finalizado", false, true);
             return $responseService->error('Hubo un error en la validación de la fecha del certificado', 400);
         }
 
@@ -381,7 +393,9 @@ class PdfSignerService
                         $image = \SetaPDF_Core_Image::getByPath(public_path('storage/icons/' . $imgFilename));
                     } catch (\SetaPDF_Core_Image_Exception $th) {
                         $this->deleteFiles($arrDocs);
+                        $logService->log("Imagen de la firma inválida");
                         $logService->log($th->getMessage());
+                        $logService->log("Proceso finalizado", false, true);
                         return $responseService->error('Invalid imgSign', 400, $th->getMessage());
                     }
 
@@ -604,7 +618,9 @@ class PdfSignerService
                         $bgImage = \SetaPDF_Core_Image::getByPath(public_path('storage/icons/' . $bgFilename));
                     } catch (\SetaPDF_Core_Image_Exception $th) {
                         $this->deleteFiles($arrDocs);
+                        $logService->log("Fondo de la firma inválido");
                         $logService->log($th->getMessage());
+                        $logService->log("Proceso finalizado", false, true);
                         return $responseService->error('Invalid backgroundSign', 400, $th->getMessage());
                     }
 
@@ -619,7 +635,9 @@ class PdfSignerService
                         $graphicImage = \SetaPDF_Core_Image::getByPath(public_path('storage/icons/' . $graphFilename));
                     } catch (\SetaPDF_Core_Image_Exception $th) {
                         $this->deleteFiles($arrDocs);
+                        $logService->log("Gráfico de la firma inválido");
                         $logService->log($th->getMessage());
+                        $logService->log("Proceso finalizado", false, true);
                         return $responseService->error('Invalid graphicImage', 400, $th->getMessage());
                     }
 
@@ -667,7 +685,9 @@ class PdfSignerService
                 break;
             default:
                 $this->deleteFiles($arrDocs);
-                $logService->log("Error en el firmado del pdf: Tipo de firma no válida ($visibleSign)");
+                $logService->log("Error en el firmado del pdf.");
+                $logService->log("Tipo de firma no válida ($visibleSign)");
+                $logService->log("Proceso finalizado", false, true);
                 return $responseService->error("Error en el firmado del pdf.", 400, "Tipo de firma no válida ($visibleSign)");
                 break;
         }
@@ -719,6 +739,8 @@ class PdfSignerService
 
                 DB::commit();
                 // Retorna la respuesta exitosa con el PDF firmado
+                $logService->log("Documento firmado correctamente");
+                $logService->log("Proceso finalizado", false, true);
                 return $responseService->success(
                     [
                         'pdf' => $b64,
