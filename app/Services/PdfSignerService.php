@@ -53,7 +53,25 @@ class PdfSignerService
         if ($request->visibleSign == null || $request->visibleSign == "") {
             $arrErrores[] = "visibleSign: El tipo de firma es obligatorio";
         } else if (!in_array((int) $request->visibleSign, [TipoFirma::TIPO_FIRMA_INVISIBLE, TipoFirma::TIPO_FIRMA_VISIBLE, TipoFirma::TIPO_FIRMA_VISIBLE_DOS])) {
-            $arrErrores[] = "visibleSign: El tipo de firma '{$request->visibleSign}' no es válido";
+            $arrErrores[] = "visibleSign: El tipo de firma '{$request->visibleSign}' no es válido (1/2/3)";
+        }
+
+        if ($request->levelCertification == null || $request->levelCertification == "") {
+            $arrErrores[] = "levelCertification: El nivel de certificación es obligatorio";
+        } else if (!in_array((int) $request->levelCertification, [\SetaPDF_Signer::CERTIFICATION_LEVEL_NONE, \SetaPDF_Signer::CERTIFICATION_LEVEL_NO_CHANGES_ALLOWED, \SetaPDF_Signer::CERTIFICATION_LEVEL_FORM_FILLING, \SetaPDF_Signer::CERTIFICATION_LEVEL_FORM_FILLING_AND_ANNOTATIONS])) {
+            $arrErrores[] = "levelCertification: El nivel de certificación '{$request->levelCertification}' no es válido (0/1/2/3)";
+        }
+
+        if (
+            (int) $request->visibleSign == TipoFirma::TIPO_FIRMA_VISIBLE
+            && ($request->withText == null || $request->withText == "")
+        ) {
+            $arrErrores[] = "withText: La opción 'Firma con texto' es obligatoria cuando el tipo de firma es Visible (2)";
+        } else if (
+            (int) $request->visibleSign == TipoFirma::TIPO_FIRMA_VISIBLE
+            && !in_array($request->withText, [0, 1])
+        ) {
+            $arrErrores[] = "withText: El valor de 'Firma con texto' no es válido. Debe ser 'Sí(1)' o 'No(0)'";
         }
 
         if (
@@ -118,6 +136,7 @@ class PdfSignerService
         $base64PDF = $request->base64PDF;
         $base64P12 = $request->base64P12;
         $passP12 = $request->passP12;
+        $levelCertification = (int) $request->levelCertification;
         $withStamp = $request->withStamp == 1;
         $urlStamp = $request->urlStamp;
         $userStamp = $request->userStamp;
@@ -126,6 +145,7 @@ class PdfSignerService
         $imgSign = ($request->imgSign == "null" ? null : $request->imgSign);
         $posSign = $request->posSign;
         $graphicSign = $request->graphicSign == 1;
+        $withText = $request->withText == 1;
         $base64GraphicSign = ($request->base64GraphicSign == "null" ? null : $request->base64GraphicSign);
         $backgroundSign = ($request->backgroundSign == "null" ? null : $request->backgroundSign);
         $reasonSign = $request->reasonSign;
@@ -153,11 +173,18 @@ class PdfSignerService
         $pdfFilename = 'pdf_' . $timestamp . '.pdf';
         $p12Filename = 'p12_' . $timestamp . '.p12';
 
+        // Rutas completas para almacenamiento
+        $pdfPath = "/public/" . $pdfFilename;
+        $p12Path = "/public/certificates/" . $p12Filename;
+
         // Almacenar archivos en disco local
-        Storage::disk('local')->put("/public/" . $pdfFilename, $pdfData);
-        Storage::disk('local')->put("/public/certificates/" . $p12Filename, $p12Data);
+        Storage::disk('local')->put($pdfPath, $pdfData);
+        Storage::disk('local')->put($p12Path, $p12Data);
+
         $arrDocs[] = "/public/" . $pdfFilename;
         $arrDocs[] = "/public/certificates/" . $p12Filename;
+        unset($pdfData);
+        unset($p12Data);
 
         // Cargar documento PDF
         $writer = new \SetaPDF_Core_Writer_String();
@@ -170,6 +197,12 @@ class PdfSignerService
             $logService->log($th->getMessage());
             $logService->log("Proceso finalizado", false, true);
             return $responseService->error('Invalid base64PDF', 400, $th->getMessage());
+        }
+
+        // Configura la apariencia del documento si tiene formulario
+        $acroForm = $document->getCatalog()->getAcroForm();
+        if ($acroForm->isNeedAppearancesSet()) {
+            $acroForm->setNeedAppearances(false);
         }
 
         $lastPage = $document->getCatalog()->getPages()->count();
@@ -310,26 +343,6 @@ class PdfSignerService
             $collector = new Collector();
         }
 
-        /* Fin del espacio para producción */
-
-        try {
-            // Obtiene información de validación relacionada con el certificado
-            $vriData = $collector->getByCertificate($certificate);
-            // Establece los certificados adicionales para el módulo
-            $module->setExtraCertificates($vriData->getCertificates());
-            // Agrega respuestas OCSP al módulo
-            foreach ($vriData->getOcspResponses() as $ocspResponse) {
-                $module->addOcspResponse($ocspResponse);
-            }
-
-            // Agrega CRLs al módulo
-            foreach ($vriData->getCrls() as $crl) {
-                $module->addCrl($crl);
-            }
-        } catch (\SetaPDF_Signer_ValidationRelatedInfo_Exception $th) {
-            // Permite firmar pero sin LTV (Long-Term Validation)
-        }
-
         // Configuración para la estampa de tiempo
         if ($withStamp) {
             // Datos para la estampa de tiempo
@@ -413,53 +426,55 @@ class PdfSignerService
                     // Crea una instancia de fuente
                     $font = new \SetaPDF_Core_Font_Type0_Subset($document, public_path('fonts/DejaVuSerif-Italic.ttf'));
 
-                    // Crea un bloque de texto simple
-                    $textBlock = new \SetaPDF_Core_Text_Block($font);
-                    $textBlock->setTextWidth($width - 10);
-                    $textBlock->setPadding(5);
+                    if ($withText) {
+                        // Crea un bloque de texto simple
+                        $textBlock = new \SetaPDF_Core_Text_Block($font);
+                        $textBlock->setTextWidth($width - 10);
+                        $textBlock->setPadding(5);
 
-                    // Obtiene la información específica del certificado
-                    if (!file_exists($certPath)) {
-                        dd("Error: The file does not exist at path: $certPath");
-                    }
-
-                    if (!is_readable($certPath)) {
-                        dd("Error: The file is not readable at path: $certPath");
-                    }
-
-                    $certificateInfo = openssl_x509_parse($certContent);
-                    $text = "Firmado por:\n"
-                        . (isset($certificateInfo['subject']['CN']) ? $certificateInfo['subject']['CN'] : $signer->getName()) . "\n"
-                        . date('Y/m/d H:i:s');
-
-                    $textBlock->setText($text);
-
-                    $matchingFontSize = null;
-                    $diff = $textBlock->getFontSize() / 2;
-                    $fontSize = $textBlock->getFontSize();
-                    $currentHeight = $textBlock->getTextHeight();
-
-                    while ($diff > .01) {
-                        if ($currentHeight > $height) {
-                            $fontSize -= $diff;
-                        } else {
-                            $fontSize += $diff;
+                        // Obtiene la información específica del certificado
+                        if (!file_exists($certPath)) {
+                            dd("Error: The file does not exist at path: $certPath");
                         }
 
-                        $diff /= 2;
-                        $textBlock->setFontSize($fontSize);
+                        if (!is_readable($certPath)) {
+                            dd("Error: The file is not readable at path: $certPath");
+                        }
 
+                        $certificateInfo = openssl_x509_parse($certContent);
+                        $text = "Firmado por:\n"
+                            . (isset($certificateInfo['subject']['CN']) ? $certificateInfo['subject']['CN'] : $signer->getName()) . "\n"
+                            . date('Y/m/d H:i:s');
+
+                        $textBlock->setText($text);
+
+                        $matchingFontSize = null;
+                        $diff = $textBlock->getFontSize() / 2;
+                        $fontSize = $textBlock->getFontSize();
                         $currentHeight = $textBlock->getTextHeight();
-                        if ($currentHeight <= $height) {
-                            $matchingFontSize = $fontSize;
+
+                        while ($diff > .01) {
+                            if ($currentHeight > $height) {
+                                $fontSize -= $diff;
+                            } else {
+                                $fontSize += $diff;
+                            }
+
+                            $diff /= 2;
+                            $textBlock->setFontSize($fontSize);
+
+                            $currentHeight = $textBlock->getTextHeight();
+                            if ($currentHeight <= $height) {
+                                $matchingFontSize = $fontSize;
+                            }
                         }
-                    }
 
-                    if ($matchingFontSize !== $fontSize) {
-                        $textBlock->setFontSize($matchingFontSize);
-                    }
+                        if ($matchingFontSize !== $fontSize) {
+                            $textBlock->setFontSize($matchingFontSize);
+                        }
 
-                    $textBlock->draw($canvas, 0, $height / 2 - $textBlock->getHeight() / 2);
+                        $textBlock->draw($canvas, 0, $height / 2 - $textBlock->getHeight() / 2);
+                    }
 
                     // Crea una instancia de apariencia XObject
                     $appearance = new \SetaPDF_Signer_Signature_Appearance_XObject($xObject);
@@ -692,79 +707,124 @@ class PdfSignerService
                 break;
         }
 
-        // Intenta firmar el documento
-        try {
-            $signer->sign($module); // Firma el documento
-            $b64 = base64_encode((string) $writer); // Codifica el documento firmado en base64
-            $this->deleteFiles($arrDocs); // Elimina archivos temporales
+        // Nivel de Certificación
+        switch ($levelCertification) {
+            case \SetaPDF_Signer::CERTIFICATION_LEVEL_NONE:
+                $signer->setCertificationLevel(\SetaPDF_Signer::CERTIFICATION_LEVEL_NONE);
 
-            $logService->log("Documento firmado correctamente");
-            $logService->log("Proceso finalizado", false, true);
+                try {
+                    // Obtiene información de validación relacionada con el certificado
+                    $vriData = $collector->getByCertificate($certificate);
+                    // Establece los certificados adicionales para el módulo
+                    $module->setExtraCertificates($vriData->getCertificates());
+                    // Agrega respuestas OCSP al módulo
+                    foreach ($vriData->getOcspResponses() as $ocspResponse) {
+                        $module->addOcspResponse($ocspResponse);
+                    }
 
-            try {
-                DB::beginTransaction();
-
-                if (Auth::check()) {
-                    $user = Auth::user();
-                } else {
-                    $user = $request->user();
+                    // Agrega CRLs al módulo
+                    foreach ($vriData->getCrls() as $crl) {
+                        $module->addCrl($crl);
+                    }
+                } catch (\SetaPDF_Signer_ValidationRelatedInfo_Exception $th) {
+                    // Permite firmar pero sin LTV (Long-Term Validation)
                 }
+                break;
+            case \SetaPDF_Signer::CERTIFICATION_LEVEL_NO_CHANGES_ALLOWED:
+                $signer->setCertificationLevel(\SetaPDF_Signer::CERTIFICATION_LEVEL_NO_CHANGES_ALLOWED);
+                break;
+            case \SetaPDF_Signer::CERTIFICATION_LEVEL_FORM_FILLING:
+                $signer->setCertificationLevel(\SetaPDF_Signer::CERTIFICATION_LEVEL_FORM_FILLING);
+                break;
+            case \SetaPDF_Signer::CERTIFICATION_LEVEL_FORM_FILLING_AND_ANNOTATIONS:
+                $signer->setCertificationLevel(\SetaPDF_Signer::CERTIFICATION_LEVEL_FORM_FILLING_AND_ANNOTATIONS);
+                break;
+            default:
+                $this->deleteFiles($arrDocs);
+                $logService->log("Error en el firmado del pdf.");
+                $logService->log("Nivel de Certificación no válido ($levelCertification)");
+                $logService->log("Proceso finalizado", false, true);
+                return $responseService->error("Error en el firmado del pdf.", 400, "Nivel de Certificación no válido ($levelCertification)");
+                break;
+        }
 
-                $objSolicitud = Solicitud::create([
-                    'hash_documento' => hash('sha512', $pdfData),
-                    'users_email' => $user->email,
-                    'estado' => true,
-                ]);
+        // Gestión de la solicitud en base de datos
+        try {
+            DB::beginTransaction();
 
-                SolicitudCampo::insert([
-                    'solicitud_id' => $objSolicitud->id,
-                    'p12_hash' => hash('sha512', $p12Data),
-                    'p12_pass' => Hash::make($passP12),
-                    'con_estampa' => $withStamp,
-                    'estampa_url' => $urlStamp,
-                    'estampa_usuario' => $userStamp,
-                    'estampa_pass' => Hash::make($passStamp),
-                    'tipo_firma_id' => $visibleSign,
-                    'firma_imagen' => ($imgData !== null ? hash('sha512', $imgData) : $imgData),
-                    'firma_informacion' => $posSign,
-                    'con_grafico' => $graphicSign,
-                    'grafico_imagen' => ($graphData !== null ? hash('sha512', $graphData) : $graphData),
-                    'grafico_fondo' => ($bgData !== null ? hash('sha512', $bgData) : $bgData),
-                    'firma_razon' => $reasonSign,
-                    'firma_ubicacion' => $locationSign,
-                    'qr_imagen' => ($qrData !== null ? hash('sha512', $qrData) : $qrData),
-                    'qr_informacion' => $infoQR,
-                    'qr_texto' => $txtQR,
-                ]);
+            if (Auth::check()) {
+                $user = Auth::user();
+            } else {
+                $user = $request->user();
+            }
 
-                DB::commit();
-                // Retorna la respuesta exitosa con el PDF firmado
+            $objSolicitud = Solicitud::create([
+                'hash_documento' => hash_file('sha512', Storage::disk('local')->path($pdfPath)),
+                'users_email' => $user->email,
+                'estado' => true,
+            ]);
+
+            SolicitudCampo::insert([
+                'solicitud_id' => $objSolicitud->id,
+                'p12_hash' => hash_file('sha512', Storage::disk('local')->path($p12Path)),
+                'p12_pass' => Hash::make($passP12),
+                'nivel_certificacion' => $levelCertification,
+                'con_estampa' => $withStamp,
+                'estampa_url' => $urlStamp,
+                'estampa_usuario' => $userStamp,
+                'estampa_pass' => Hash::make($passStamp),
+                'tipo_firma_id' => $visibleSign,
+                'firma_con_texto' => $withText,
+                'firma_imagen' => ($imgData !== null ? hash('sha512', $imgData) : $imgData),
+                'firma_informacion' => $posSign,
+                'con_grafico' => $graphicSign,
+                'grafico_imagen' => ($graphData !== null ? hash('sha512', $graphData) : $graphData),
+                'grafico_fondo' => ($bgData !== null ? hash('sha512', $bgData) : $bgData),
+                'firma_razon' => $reasonSign,
+                'firma_ubicacion' => $locationSign,
+                'qr_imagen' => ($qrData !== null ? hash('sha512', $qrData) : $qrData),
+                'qr_informacion' => $infoQR,
+                'qr_texto' => $txtQR,
+            ]);
+
+            // Intenta firmar el documento
+            try {
+                $signer->sign($module); // Firma el documento
                 $logService->log("Documento firmado correctamente");
                 $logService->log("Proceso finalizado", false, true);
-                return $responseService->success(
-                    [
-                        'pdf' => $b64,
-                    ],
-                    'Documento firmado correctamente'
-                );
-            } catch (\Exception $e) {
-                DB::rollBack();
-                $logService->log("Error en el registro de la solicitud");
-                $logService->log($e->getMessage() . '. Line: ' . $e->getLine());
+            } catch (\SetaPDF_Signer_Exception $th) {
+                $logService->log("Error en el proceso");
+                $logService->log($th->getMessage());
                 $logService->log("Proceso finalizado", false, true);
 
                 // En caso de error, elimina archivos temporales y retorna un error
                 $this->deleteFiles($arrDocs);
-                return $responseService->error("Error en el registro de la solicitud.", 400, "Hubo un error en el registro de base de datos.");
+                return $responseService->error("Error en el firmado del pdf.", 400, $th->getMessage());
             }
-        } catch (\SetaPDF_Signer_Exception $th) {
-            $logService->log("Error en el proceso");
-            $logService->log($th->getMessage());
+
+            DB::commit();
+
+            // Retorna la respuesta exitosa con el PDF firmado
+            $logService->log("Documento firmado correctamente");
+            $logService->log("Proceso finalizado", false, true);
+            $this->deleteFiles($arrDocs); // Elimina archivos temporales
+            gc_collect_cycles();
+
+            return $responseService->success(
+                [
+                    'pdf' => base64_encode((string) $writer), // Codifica el documento firmado en base64
+                ],
+                'Documento firmado correctamente'
+            );
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $logService->log("Error en el registro de la solicitud");
+            $logService->log($e->getMessage() . '. Line: ' . $e->getLine());
             $logService->log("Proceso finalizado", false, true);
 
             // En caso de error, elimina archivos temporales y retorna un error
             $this->deleteFiles($arrDocs);
-            return $responseService->error("Error en el firmado del pdf.", 400, $th->getMessage());
+            return $responseService->error("Error en el registro de la solicitud.", 400, "Hubo un error en el registro de base de datos.");
         }
     }
 
