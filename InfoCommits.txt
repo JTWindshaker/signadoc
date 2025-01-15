@@ -1,22 +1,12 @@
 =========================================
-============= *Ready 09/01/2025* ============
+============= *Ready 15/01/2025* ============
 =========================================
 
 *Cambios:*
--- Mejoras y cambios en el firmador API
+-- Corrección en las validaciones: Los valores enteros enviados de '0', los igualaba a null.
 
 *Notas/Observaciones:*
--- Se optimizaron algunas cosas para reducir el consumo de RAM. La verdad siento que optimizado quedó un <= 50%, siento que se puede hacer mucho más pero la verdad hay cosas que no entiendo el funcionamiento de ello.
--- Se agregó un nuevo parámetro a la petición del api withText (En la tabla 'firma_con_texto') obligatorio y solo para el tipo de firma 2 (firma visible).
--- Se agregó un nuevo parámetro a la petición del api levelCertification (En la tabla 'nivel_certificacion') obligatorio.
--- Ahora se permite establecer el nivel de certificación (0/1/2/3).
--- Ahora se permite firmar pdf's con formularios.
+-- 
 
 *SQL:*
-#Se crean los campos firma_con_texto y nivel_certificacion en la tabla solicitud_campo. Adicional, se actualizan los campos de las solicitudes actuales
-
-alter table solicitud_campo add column firma_con_texto boolean not null default false;
-alter table solicitud_campo add column nivel_certificacion integer;
-
-update solicitud_campo set nivel_certificacion=0;
-alter table solicitud_campo alter column nivel_certificacion set not null;
+--

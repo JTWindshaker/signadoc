@@ -22,19 +22,19 @@ class PdfSignerService
         //Validaciones
         $arrErrores = array();
 
-        if ($request->base64PDF == null || $request->base64PDF == "") {
+        if ($request->base64PDF === null || $request->base64PDF == "") {
             $arrErrores[] = "base64PDF: El b64 del PDF es obligatorio";
         }
 
-        if ($request->base64P12 == null || $request->base64P12 == "") {
+        if ($request->base64P12 === null || $request->base64P12 == "") {
             $arrErrores[] = "base64P12: El b64 del certificado es obligatorio";
         }
 
-        if ($request->passP12 == null || $request->passP12 == "") {
+        if ($request->passP12 === null || $request->passP12 == "") {
             $arrErrores[] = "passP12: La contraseña del certificado es obligatoria";
         }
 
-        if ($request->withStamp == null) {
+        if ($request->withStamp === null) {
             $arrErrores[] = "withStamp: La opción 'Con estampa de tiempo' es obligatoria";
         }
 
@@ -43,20 +43,20 @@ class PdfSignerService
         }
 
         if ($request->withStamp == 1) {
-            if ($request->urlStamp == null || $request->urlStamp == "") {
+            if ($request->urlStamp === null || $request->urlStamp == "") {
                 $arrErrores[] = "urlStamp: La url de la estampa es obligatoria, cuando 'Con estampa de tiempo' es 'Sí(1)'";
             } else if (!preg_match('/^(https?:\/\/)?([a-zA-Z0-9.-]+\.[a-zA-Z]{2,6})(:[0-9]{1,5})?(\/.*)?$/', $request->urlStamp)) {
                 $arrErrores[] = "urlStamp: El formato de la url de la estampa es inválido";
             }
         }
 
-        if ($request->visibleSign == null || $request->visibleSign == "") {
+        if ($request->visibleSign === null || $request->visibleSign == "") {
             $arrErrores[] = "visibleSign: El tipo de firma es obligatorio";
         } else if (!in_array((int) $request->visibleSign, [TipoFirma::TIPO_FIRMA_INVISIBLE, TipoFirma::TIPO_FIRMA_VISIBLE, TipoFirma::TIPO_FIRMA_VISIBLE_DOS])) {
             $arrErrores[] = "visibleSign: El tipo de firma '{$request->visibleSign}' no es válido (1/2/3)";
         }
 
-        if ($request->levelCertification == null || $request->levelCertification == "") {
+        if ($request->levelCertification === null || $request->levelCertification == "") {
             $arrErrores[] = "levelCertification: El nivel de certificación es obligatorio";
         } else if (!in_array((int) $request->levelCertification, [\SetaPDF_Signer::CERTIFICATION_LEVEL_NONE, \SetaPDF_Signer::CERTIFICATION_LEVEL_NO_CHANGES_ALLOWED, \SetaPDF_Signer::CERTIFICATION_LEVEL_FORM_FILLING, \SetaPDF_Signer::CERTIFICATION_LEVEL_FORM_FILLING_AND_ANNOTATIONS])) {
             $arrErrores[] = "levelCertification: El nivel de certificación '{$request->levelCertification}' no es válido (0/1/2/3)";
@@ -64,7 +64,7 @@ class PdfSignerService
 
         if (
             (int) $request->visibleSign == TipoFirma::TIPO_FIRMA_VISIBLE
-            && ($request->withText == null || $request->withText == "")
+            && ($request->withText === null || $request->withText == "")
         ) {
             $arrErrores[] = "withText: La opción 'Firma con texto' es obligatoria cuando el tipo de firma es Visible (2)";
         } else if (
@@ -76,7 +76,7 @@ class PdfSignerService
 
         if (
             in_array((int) $request->visibleSign, [TipoFirma::TIPO_FIRMA_VISIBLE, TipoFirma::TIPO_FIRMA_VISIBLE_DOS])
-            && ($request->posSign == null || $request->posSign == "")
+            && ($request->posSign === null || $request->posSign == "")
         ) {
             $arrErrores[] = "posSign: Las propiedades de la firma son obligatorias cuando el tipo de firma son 'Visible(2)' y Visible 2(3)";
         } else if (
@@ -88,7 +88,7 @@ class PdfSignerService
 
         if (
             (int) $request->visibleSign == TipoFirma::TIPO_FIRMA_VISIBLE_DOS
-            && ($request->graphicSign == null || $request->graphicSign == "")
+            && ($request->graphicSign === null || $request->graphicSign == "")
         ) {
             $arrErrores[] = "graphicSign: La opción 'Con firma gráfica' es obligatoria cuando el tipo de firma es Visible 2(3)";
         } else if (
@@ -101,14 +101,14 @@ class PdfSignerService
         if (
             (int) $request->visibleSign == TipoFirma::TIPO_FIRMA_VISIBLE_DOS
             && $request->graphicSign == 1
-            && ($request->base64GraphicSign == null || $request->base64GraphicSign == "")
+            && ($request->base64GraphicSign === null || $request->base64GraphicSign == "")
         ) {
             $arrErrores[] = "base64GraphicSign: La imágen gráfica de la firma es obligatoria cuando el tipo de firma es Visible 2(3) y la opción 'Con firma gráfica' es 'Sí(1)'";
         }
 
         if (
             ($request->txtQR != null && $request->txtQR != "")
-            && ($request->infoQR == null || $request->infoQR == "")
+            && ($request->infoQR === null || $request->infoQR == "")
         ) {
             $arrErrores[] = "infoQR: Las propiedades del código QR son obligatorias cuando el texto del QR(txtQR) no es vacío";
         } else if (
@@ -120,7 +120,7 @@ class PdfSignerService
 
         if (
             ($request->infoQR != null && $request->infoQR != "")
-            && ($request->txtQR == null || $request->txtQR == "")
+            && ($request->txtQR === null || $request->txtQR == "")
         ) {
             $arrErrores[] = "txtQR: El texto del QR es obligatorio cuando las propiedades(infoQR) no están vacías";
         }
@@ -805,8 +805,6 @@ class PdfSignerService
             DB::commit();
 
             // Retorna la respuesta exitosa con el PDF firmado
-            $logService->log("Documento firmado correctamente");
-            $logService->log("Proceso finalizado", false, true);
             $this->deleteFiles($arrDocs); // Elimina archivos temporales
             gc_collect_cycles();
 
