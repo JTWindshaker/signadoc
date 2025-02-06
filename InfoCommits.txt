@@ -1,9 +1,9 @@
 =========================================
-============= *Ready 15/01/2025* ============
+============= *Ready 06/02/2025* ============
 =========================================
 
 *Cambios:*
--- Corrección en las validaciones: Los valores enteros enviados de '0', los igualaba a null.
+-- Se ajustan los zooms con la escala del pdf. (La escala está de forma manual)
 
 *Notas/Observaciones:*
 -- 

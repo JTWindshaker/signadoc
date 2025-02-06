@@ -87,7 +87,7 @@ async function loadPDF(pdfUrl, annotations) {
     await loadFieldsIntoTemplate(annotations);
 }
 
-const SCALE = 1.2;
+const SCALE = 0.8;
 async function renderPage(pdfDoc, pageNum) {
     const page = await pdfDoc.getPage(pageNum);
     const viewport = page.getViewport({ scale: SCALE });
@@ -100,6 +100,8 @@ async function renderPage(pdfDoc, pageNum) {
     }).css({
         width: `${viewport.width}px`,
         height: `${viewport.height + 40}px`,
+        transform: `scale(${SCALE})`,
+        transformOrigin: "center"
     }).appendTo($pdfContainer);
 
     const $pdfCanvas = $("<canvas>")
@@ -220,7 +222,8 @@ function loadAnnotationProperties() {
             const $textProperties = $('.textProperties');
             $textProperties.removeClass("hidden");
 
-            const { fontFamily, fontSize, fill, fontStyle, text, isEditable, align, textDecoration } = nodeGlobal.attrs;
+            let { fontFamily, fontSize, fill, fontStyle, text, isEditable, align, textDecoration } = nodeGlobal.attrs;
+            fontSize = (fontSize / SCALE).toFixed(0);
 
             $("#fontSelect").val(fontFamily);
             $("#fontSizeSelect").val(fontSize);
@@ -275,7 +278,8 @@ function loadAnnotationProperties() {
             const $selectProperties = $('.selectProperties');
             $selectProperties.removeClass("hidden");
 
-            const { fontFamily, fontSize, fill, fontStyle, text, isEditable, align, textDecoration, options, value } = nodeGlobal.attrs;
+            let { fontFamily, fontSize, fill, fontStyle, text, isEditable, align, textDecoration, options, value } = nodeGlobal.attrs;
+            fontSize = (fontSize / SCALE).toFixed(0);
 
             $("#fontSelect").val(fontFamily);
             $("#fontSizeSelect").val(fontSize);
@@ -320,6 +324,8 @@ function loadAnnotationProperties() {
                     }
 
                     $('#options-container').append(newOption);
+                } else {
+                    $('input.option-input[data-value="0"]').val(option.name);
                 }
             });
 
@@ -450,10 +456,10 @@ function updateAnnotationData(pageNum, field, type) {
         case "text": {
             annotationsData[pageNum] = annotationsData[pageNum].map(item => {
                 if (item.id === idField) {
-                    item.x = field.x();
-                    item.y = field.y();
-                    item.width = field.width();
-                    item.height = field.height();
+                    item.x = field.x() / SCALE;
+                    item.y = field.y() / SCALE;
+                    item.width = field.width() / SCALE;
+                    item.height = field.height() / SCALE;
                     return item;
                 }
                 return item;
@@ -464,10 +470,10 @@ function updateAnnotationData(pageNum, field, type) {
         case "image": {
             annotationsData[pageNum] = annotationsData[pageNum].map(item => {
                 if (item.id === idField) {
-                    item.x = field.x();
-                    item.y = field.y();
-                    item.width = field.width() * field.scaleX();
-                    item.height = field.height() * field.scaleY();
+                    item.x = field.x() / SCALE;
+                    item.y = field.y() / SCALE;
+                    item.width = field.width() * field.scaleX() / SCALE;
+                    item.height = field.height() * field.scaleY() / SCALE;
                     item.rotation = field.rotation();
                     item.opacity = field.opacity();
                     item.image = field.image();
@@ -481,10 +487,10 @@ function updateAnnotationData(pageNum, field, type) {
         case "select": {
             annotationsData[pageNum] = annotationsData[pageNum].map(item => {
                 if (item.id === idField) {
-                    item.x = field.x();
-                    item.y = field.y();
-                    item.width = field.width();
-                    item.height = field.height();
+                    item.x = field.x() / SCALE;
+                    item.y = field.y() / SCALE;
+                    item.width = field.width() / SCALE;
+                    item.height = field.height() / SCALE;
                     return item;
                 }
                 return item;
@@ -525,7 +531,7 @@ function saveAnnotation() {
     switch (type) {
         case "text": {
             nodeGlobal.fontFamily($("#fontSelect").val());
-            nodeGlobal.fontSize(parseInt($("#fontSizeSelect").val(), 10));
+            nodeGlobal.fontSize(parseInt($("#fontSizeSelect").val(), 10) * SCALE);
             nodeGlobal.fill($("#fontColor").val());
 
             let fontStyle = [];
@@ -619,7 +625,7 @@ function saveAnnotation() {
 
         case "select": {
             nodeGlobal.fontFamily($("#fontSelect").val());
-            nodeGlobal.fontSize(parseInt($("#fontSizeSelect").val(), 10));
+            nodeGlobal.fontSize(parseInt($("#fontSizeSelect").val(), 10) * SCALE);
             nodeGlobal.fill($("#fontColor").val());
 
             let fontStyleSelect = [];
@@ -643,6 +649,7 @@ function saveAnnotation() {
             }
 
             nodeGlobal.textDecoration(textDecorationSelect.length > 0 ? textDecorationSelect.join(" ") : "empty string");
+            nodeGlobal.text($("#placeholder").val());
             nodeGlobal.attrs.isEditable = $("#isEditable").is(":checked");
 
             if ($("#propAlignLeft").hasClass("active")) {
@@ -660,7 +667,6 @@ function saveAnnotation() {
             nodeGlobal.attrs.value = selectedValue;
             console.log('Opción seleccionada (data-value):', selectedValue);
             console.log('Texto de la opción seleccionada:', selectedText);
-            nodeGlobal.text(selectedText);
 
             // Obtener todas las opciones como un array
             const optionsArray = [];
@@ -684,7 +690,7 @@ function saveAnnotation() {
                     updatedAnnotation.fill = $("#fontColor").val();
                     updatedAnnotation.fontStyle = fontStyleSelect.length > 0 ? fontStyleSelect.join(" ") : "normal";
                     updatedAnnotation.textDecoration = textDecorationSelect.length > 0 ? textDecorationSelect.join(" ") : "empty string";
-                    updatedAnnotation.text = selectedText;
+                    updatedAnnotation.text = $("#placeholder").val();
                     updatedAnnotation.isEditable = $("#isEditable").is(":checked");
                     updatedAnnotation.options = optionsArray;
                     updatedAnnotation.value = selectedValue;
@@ -992,11 +998,26 @@ function loadFields() {
             });
 
             $('#toolbar').append(saveButton);
+
+            // Crear el botón Salir
+            const backButton = $('<button>', {
+                text: 'Atrás',
+                class: 'btn btn-danger',
+                click: goBack
+            }).css({
+                "margin-left": "10px"
+            });
+
+            $('#toolbar').append(backButton);
         },
         onError: function (xhr, status, error) {
             console.error('onError:', status, error);
         }
     });
+}
+
+function goBack() {
+    window.history.back();
 }
 
 function saveTemplate() {
@@ -1052,12 +1073,12 @@ async function loadFieldsIntoTemplate(fields) {
                     draggable: properties.draggable,
                     fill: properties.fill,
                     fontFamily: properties.fontFamily, // Arial, Times New Roman, Courier New, Verdana, Calibri
-                    fontSize: properties.fontSize,
+                    fontSize: properties.fontSize * SCALE,
                     fontStyle: properties.fontStyle, // normal, italic, bold, 500, italic bold
                     id: properties.id,
                     idField: properties.idField,
                     isEditable: properties.isEditable,
-                    lineHeight: properties.lineHeight,
+                    lineHeight: properties.lineHeight * SCALE,
                     maxChar: properties.maxChar,
                     name: properties.name,
                     padding: properties.padding,
@@ -1066,10 +1087,10 @@ async function loadFieldsIntoTemplate(fields) {
                     textDecoration: properties.textDecoration, // line-through, underline, empty string
                     type: properties.type,
                     verticalAlign: properties.verticalAlign, // top, middle, bottom
-                    width: properties.width,
+                    width: properties.width * SCALE,
                     wrap: properties.wrap, // word, char, none
-                    x: properties.x,
-                    y: properties.y,
+                    x: properties.x * SCALE,
+                    y: properties.y * SCALE,
                 });
 
                 annotationLayer.add(text);
@@ -1080,12 +1101,12 @@ async function loadFieldsIntoTemplate(fields) {
                     draggable: text.draggable(),
                     fill: text.fill(),
                     fontFamily: text.fontFamily(),
-                    fontSize: text.fontSize(),
+                    fontSize: (text.fontSize() / SCALE).toFixed(0) * 1,
                     fontStyle: text.fontStyle(),
                     id: text.id(),
                     idField: text.attrs.idField,
                     isEditable: text.attrs.isEditable,
-                    lineHeight: text.lineHeight(),
+                    lineHeight: text.lineHeight() / SCALE,
                     maxChar: text.attrs.maxChar,
                     name: text.name(),
                     padding: text.padding(),
@@ -1094,10 +1115,10 @@ async function loadFieldsIntoTemplate(fields) {
                     textDecoration: text.textDecoration(),
                     type: text.attrs.type,
                     verticalAlign: text.verticalAlign(),
-                    width: text.width(),
+                    width: text.width() / SCALE,
                     wrap: text.wrap(),
-                    x: text.x(),
-                    y: text.y(),
+                    x: text.x() / SCALE,
+                    y: text.y() / SCALE,
                 });
 
                 setupAnnotationEvents("text", text);
@@ -1112,12 +1133,12 @@ async function loadFieldsIntoTemplate(fields) {
                     draggable: properties.draggable,
                     fill: properties.fill,
                     fontFamily: properties.fontFamily, // Arial, Times New Roman, Courier New, Verdana, Calibri
-                    fontSize: properties.fontSize,
+                    fontSize: properties.fontSize * SCALE,
                     fontStyle: properties.fontStyle, // normal, italic, bold, 500, italic bold
                     id: properties.id,
                     idField: properties.idField,
                     isEditable: properties.isEditable,
-                    lineHeight: properties.lineHeight,
+                    lineHeight: properties.lineHeight * SCALE,
                     name: properties.name,
                     options: properties.options,
                     padding: properties.padding,
@@ -1127,10 +1148,10 @@ async function loadFieldsIntoTemplate(fields) {
                     type: properties.type,
                     value: properties.value,
                     verticalAlign: properties.verticalAlign, // top, middle, bottom
-                    width: properties.width,
+                    width: properties.width * SCALE,
                     wrap: properties.wrap, // word, char, none
-                    x: properties.x,
-                    y: properties.y,
+                    x: properties.x * SCALE,
+                    y: properties.y * SCALE,
                 });
 
                 annotationLayer.add(select);
@@ -1141,12 +1162,12 @@ async function loadFieldsIntoTemplate(fields) {
                     draggable: select.draggable(),
                     fill: select.fill(),
                     fontFamily: select.fontFamily(),
-                    fontSize: select.fontSize(),
+                    fontSize: (select.fontSize() / SCALE).toFixed(0) * 1,
                     fontStyle: select.fontStyle(),
                     id: select.id(),
                     idField: select.attrs.idField,
                     isEditable: select.attrs.isEditable,
-                    lineHeight: select.lineHeight(),
+                    lineHeight: select.lineHeight() / SCALE,
                     name: select.name(),
                     options: select.attrs.options,
                     padding: select.padding(),
@@ -1156,10 +1177,10 @@ async function loadFieldsIntoTemplate(fields) {
                     type: select.attrs.type,
                     value: select.attrs.value,
                     verticalAlign: select.verticalAlign(),
-                    width: select.width(),
+                    width: select.width() / SCALE,
                     wrap: select.wrap(),
-                    x: select.x(),
-                    y: select.y(),
+                    x: select.x() / SCALE,
+                    y: select.y() / SCALE,
                 });
 
                 setupAnnotationEvents("select", select);
@@ -1174,7 +1195,7 @@ async function loadFieldsIntoTemplate(fields) {
 
                 const image = new Konva.Image({
                     draggable: properties.draggable,
-                    height: properties.height,
+                    height: properties.height * SCALE,
                     id: properties.id,
                     idField: properties.idField,
                     image: objImg,
@@ -1185,9 +1206,9 @@ async function loadFieldsIntoTemplate(fields) {
                     rotation: properties.rotation,
                     src: objImg.src,
                     type: properties.type,
-                    width: properties.width,
-                    x: properties.x,
-                    y: properties.y,
+                    width: properties.width * SCALE,
+                    x: properties.x * SCALE,
+                    y: properties.y * SCALE,
                 });
 
                 annotationLayer.add(image);
@@ -1195,7 +1216,7 @@ async function loadFieldsIntoTemplate(fields) {
 
                 annotationsData[page].push({
                     draggable: image.draggable(),
-                    height: image.height(),
+                    height: image.height() / SCALE,
                     id: image.id(),
                     idField: image.attrs.idField,
                     image: image.image(),
@@ -1206,9 +1227,9 @@ async function loadFieldsIntoTemplate(fields) {
                     rotation: image.rotation(),
                     src: image.attrs.src,
                     type: image.attrs.type,
-                    width: image.width(),
-                    x: image.x(),
-                    y: image.y(),
+                    width: image.width() / SCALE,
+                    x: image.x() / SCALE,
+                    y: image.y() / SCALE,
                 });
 
                 setupAnnotationEvents("image", image);

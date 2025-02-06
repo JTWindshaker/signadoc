@@ -264,9 +264,8 @@ class PdfSignerService
         if (!$certContent) {
             $this->deleteFiles($arrDocs);
             $logService->log("Contenido del certificado inválido");
-            $logService->log($th->errors());
             $logService->log("Proceso finalizado", false, true);
-            return $responseService->error('Invalid certificate content', 400, $th->errors());
+            return $responseService->error('Invalid certificate content', 400, '');
         }
 
         // Proceso para leer el certificado P12

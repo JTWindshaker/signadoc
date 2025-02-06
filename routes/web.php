@@ -56,8 +56,15 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/template/list-templates', [TemplateController::class, 'listTemplates'])->name('list-templates');
     Route::post('/template/create', [TemplateController::class, 'templateCreate'])->name('template.create');
     Route::post('/template/delete', [TemplateController::class, 'templateDelete'])->name('template.delete');
+
+    // Editar Plantillas
     Route::get('/edit-template/{id}', [TemplateController::class, 'editTemplateView'])->name('edit-template');
     Route::post('/edit-template/list-fields', [TemplateController::class, 'listFields'])->name('list-fields');
     Route::post('/edit-template/load-template', [TemplateController::class, 'loadTemplate'])->name('load-template');
     Route::post('/edit-template/save-template', [TemplateController::class, 'saveTemplate'])->name('save-template');
+
+    // Llenado Plantillas
+    Route::get('/fill-template/{id}', [TemplateController::class, 'fillTemplateView'])->name('fill-template');
+    Route::post('/fill-template/load-template', [TemplateController::class, 'fillLoadTemplate'])->name('fill-load-template');
+    Route::post('/fill-template/save-template', [TemplateController::class, 'fillSaveTemplate'])->name('fill-save-template');
 });

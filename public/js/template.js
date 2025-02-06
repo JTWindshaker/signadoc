@@ -59,6 +59,7 @@ function loadTemplates() {
                         <p class="card-text"><strong>Fecha de Registro:</strong> ${fechaRegistro}</p>
                         <div class="btn-group">
                             <button class="btn btn-primary btn-sm btn-editar" data-id="${data.id}">Editar</button>
+                            <button class="btn btn-success btn-sm btn-llenar" data-id="${data.id}">Llenar</button>
                             <button class="btn btn-danger btn-sm btn-eliminar" data-id="${data.id}">Eliminar</button>
                         </div>
                     </div>
@@ -68,7 +69,12 @@ function loadTemplates() {
                 $contenedor.append($card);
             });
 
-            // Eventos para los botones Editar y Eliminar
+            // Eventos para los botones Editar, Llenar y Eliminar
+            $('.btn-llenar').on('click', function () {
+                const id = $(this).data('id');
+                window.location.href = `/fill-template/${id}`;
+            });
+
             $('.btn-editar').on('click', function () {
                 const id = $(this).data('id');
                 console.log('Editar plantilla con ID:', id);

@@ -67,7 +67,7 @@
             </div>
 
             <!-- Placeholder: Texto -->
-            <div class="form-group typeProperties textProperties">
+            <div class="form-group typeProperties textProperties selectProperties">
                 <label class="form-label" for="placeholder">Placeholder:</label>
                 <input class="form-control" type="text" id="placeholder" name="placeholder"
                     placeholder="-- Escribe aquí --" value="">
