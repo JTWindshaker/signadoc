@@ -1,0 +1,174 @@
+/* Estilo adicional para la animación */
+#fieldsContent {
+    position: fixed;
+    height: 100vh;
+    overflow-y: auto;
+    top: 0;
+    right: -300px;
+    width: 300px;
+    height: 100%;
+    background-color: #f8f9fa;
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.3);
+    transition: right 0.3s ease-in;
+    z-index: 1050;
+}
+
+#fieldsContent.active {
+    right: 0;
+}
+
+#pdf-container {
+    width: 100%;
+    height: calc(100vh - 46px);
+    background-color: #e9ecef;
+    overflow-y: auto;
+}
+
+.form-group label {
+    font-weight: bold;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-control {
+    width: 100%;
+}
+
+.btn {
+    width: 100%;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+* {
+    user-select: none;
+}
+
+#pdf-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.page-container {
+    position: relative;
+    border: 1px solid #ddd;
+    margin: 10px 0;
+}
+
+canvas {
+    border: 1px solid black;
+    display: block;
+}
+
+.konva-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.toolbar {
+    text-align: center;
+    margin-bottom: 10px;
+    position: relative;
+    z-index: 1000;
+}
+
+.text-editor {
+    position: absolute;
+    display: none;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    background: white;
+    z-index: 10;
+}
+
+/* Estilos Globales */
+.hidden {
+    display: none !important;
+}
+
+/* Estilos Propiedades */
+/* Estilo base para los botones */
+.alignButton,
+.styleButton {
+    display: inline-block;
+    padding: 10px 15px;
+    margin: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    background-color: #f9f9f9;
+    user-select: none;
+    text-align: center;
+}
+
+/* Estilo para los botones activos */
+.alignButton.active,
+.styleButton.active {
+    background-color: #007bff;
+    color: #fff;
+    border-color: #007bff;
+}
+
+/* Hover efecto */
+.alignButton:hover,
+.styleButton:hover {
+    background-color: #e9ecef;
+}
+
+/* Estilos Opciones */
+#options-container {
+    margin-bottom: 10px;
+}
+
+.option {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.option input[type="radio"] {
+    margin-right: 10px;
+}
+
+.option p {
+    margin: 0;
+    flex-grow: 1;
+}
+
+.option .delete-btn {
+    margin-left: 10px;
+    background-color: transparent;
+    border: none;
+    color: red;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+#add-option-btn {
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+#add-option-btn:hover {
+    background-color: #0056b3;
+}

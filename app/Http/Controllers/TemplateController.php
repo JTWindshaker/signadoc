@@ -231,26 +231,22 @@ class TemplateController extends Controller
             abort(404, 'ID inválido o manipulado.');
         }
 
-        $pages = json_decode($request->fields);
+        $fields = json_decode($request->fields);
         try {
             DB::beginTransaction();
 
             PlantillaCampo::where('plantilla_id', $idTemplate)->delete();
-            foreach ($pages as $page => $pages) {
-                if (!empty($pages)) {
-                    foreach ($pages as $field) {
-                        if ($field->idField !== TipoCampo::TIPO_CAMPO_QR) {
-                            $field->name = $field->text;
-                        }
-
-                        PlantillaCampo::create([
-                            'pagina' => $page,
-                            'propiedades' => json_encode($field),
-                            'plantilla_id' => $idTemplate,
-                            'campo_id' => $field->idField,
-                        ]);
-                    }
+            foreach ($fields as $field) {
+                if ($field->idField !== TipoCampo::TIPO_CAMPO_QR) {
+                    $field->name = $field->properties->text;
                 }
+
+                PlantillaCampo::create([
+                    'pagina' => $field->page,
+                    'propiedades' => json_encode($field),
+                    'plantilla_id' => $idTemplate,
+                    'campo_id' => $field->idField,
+                ]);
             }
             DB::commit();
         } catch (\Exception $e) {

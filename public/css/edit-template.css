@@ -1,174 +1,70 @@
-/* Estilo adicional para la animación */
-#propertiesContent {
-    position: fixed;
-    height: 100vh;
-    overflow-y: auto;
-    top: 0;
-    right: -300px;
-    width: 300px;
-    height: 100%;
-    background-color: #f8f9fa;
-    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.3);
-    transition: right 0.3s ease-in;
-    z-index: 1050;
+body {
+    font-family: sans-serif;
+    margin: 20px;
 }
 
-#propertiesContent.active {
-    right: 0;
-}
-
+/* Contenedor para el canvas o canvases; posición relativa para colocar campos sobre él */
 #pdf-container {
-    width: 100%;
-    height: calc(100vh - 46px);
-    background-color: #e9ecef;
-    overflow-y: auto;
-}
-
-.form-group label {
-    font-weight: bold;
-}
-
-.form-group {
-    margin-bottom: 15px;
-}
-
-.form-control {
-    width: 100%;
-}
-
-.btn {
-    width: 100%;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-* {
-    user-select: none;
-}
-
-#pdf-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
-}
-
-.page-container {
     position: relative;
-    border: 1px solid #ddd;
-    margin: 10px 0;
+    display: inline-block;
+    border: 1px solid #000;
+    margin-bottom: 20px;
 }
 
 canvas {
-    border: 1px solid black;
     display: block;
-}
-
-.konva-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-}
-
-.toolbar {
-    text-align: center;
     margin-bottom: 10px;
-    position: relative;
-    z-index: 1000;
 }
 
-.text-editor {
+/* Estilo para los campos arrastrables (en modo una página) */
+.draggable {
     position: absolute;
-    display: none;
-    font-size: 16px;
-    border: 1px solid #ccc;
-    background: white;
-    z-index: 10;
+    border: 1px dashed blue;
+    /* background: rgba(255, 255, 255, 0.8); */
+    background: transparent;
+    box-sizing: border-box;
+    overflow: visible;
 }
 
-/* Estilos Globales */
-.hidden {
-    display: none !important;
+/* Handle para redimensionar (esquina inferior derecha) */
+.resize-handle {
+    position: absolute;
+    width: 5px;
+    height: 5px;
+    background: blue;
+    right: 0;
+    bottom: 0;
+    cursor: se-resize;
 }
 
-/* Estilos Propiedades */
-/* Estilo base para los botones */
-.alignButton,
-.styleButton {
-    display: inline-block;
-    padding: 10px 15px;
+button,
+label {
     margin: 5px;
+}
+
+/* Panel de propiedades para campos de texto */
+#field-properties {
+    display: none;
+    margin-top: 10px;
     border: 1px solid #ccc;
-    border-radius: 4px;
-    cursor: pointer;
-    background-color: #f9f9f9;
-    user-select: none;
-    text-align: center;
+    padding: 10px;
+    max-width: 300px;
 }
 
-/* Estilo para los botones activos */
-.alignButton.active,
-.styleButton.active {
-    background-color: #007bff;
-    color: #fff;
-    border-color: #007bff;
+.field-buttons {
+    position: absolute;
+    top: -30px;
+    /* Valor negativo para que se sitúe sobre el campo */
+    left: 1px;
+    display: none;
+    /* Se muestra al seleccionar el campo */
+    z-index: 100;
 }
 
-/* Hover efecto */
-.alignButton:hover,
-.styleButton:hover {
-    background-color: #e9ecef;
-}
-
-/* Estilos Opciones */
-#options-container {
-    margin-bottom: 10px;
-}
-
-.option {
-    display: flex;
-    align-items: center;
-    margin-bottom: 5px;
-}
-
-.option input[type="radio"] {
-    margin-right: 10px;
-}
-
-.option p {
-    margin: 0;
-    flex-grow: 1;
-}
-
-.option .delete-btn {
-    margin-left: 10px;
-    background-color: transparent;
+.field-buttons button {
+    background: transparent;
     border: none;
-    color: red;
+    cursor: pointer;
     font-size: 16px;
-    cursor: pointer;
-}
-
-#add-option-btn {
-    background-color: #007BFF;
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    cursor: pointer;
-    border-radius: 5px;
-}
-
-#add-option-btn:hover {
-    background-color: #0056b3;
+    margin-right: 1px;
 }

@@ -76,9 +76,18 @@ class PdfSignerService
 
         if (
             in_array((int) $request->visibleSign, [TipoFirma::TIPO_FIRMA_VISIBLE, TipoFirma::TIPO_FIRMA_VISIBLE_DOS])
-            && ($request->posSign === null || $request->posSign == "")
+            && (
+                ($request->posSign !== null || $request->posSign != "") &
+                ($request->fieldSign !== null || $request->fieldSign != "")
+            )
         ) {
-            $arrErrores[] = "posSign: Las propiedades de la firma son obligatorias cuando el tipo de firma son 'Visible(2)' y Visible 2(3)";
+            $arrErrores[] = "fieldSign y posSign: El nombre del campo de firma y las propiedades de la firma no deben ser enviados en la misma solicitud cuando el tipo de firma son 'Visible(2)' y Visible 2(3)";
+        } else if (
+            in_array((int) $request->visibleSign, [TipoFirma::TIPO_FIRMA_VISIBLE, TipoFirma::TIPO_FIRMA_VISIBLE_DOS])
+            && ($request->posSign === null || $request->posSign == "")
+            && ($request->fieldSign === null || $request->fieldSign == "")
+        ) {
+            $arrErrores[] = "fieldSign y posSign: El nombre del campo de firma o las propiedades de la firma son obligatorias cuando el tipo de firma son 'Visible(2)' y Visible 2(3)";
         } else if (
             in_array((int) $request->visibleSign, [TipoFirma::TIPO_FIRMA_VISIBLE, TipoFirma::TIPO_FIRMA_VISIBLE_DOS])
             && ($request->posSign != null && $request->posSign != "") && !preg_match('/^\d+,\d+,\d+,\d+,\d+$/', $request->posSign)
@@ -144,6 +153,7 @@ class PdfSignerService
         $visibleSign = (int) $request->visibleSign;
         $imgSign = ($request->imgSign == "null" ? null : $request->imgSign);
         $posSign = $request->posSign;
+        $fieldSign = $request->fieldSign;
         $graphicSign = $request->graphicSign == 1;
         $withText = $request->withText == 1;
         $base64GraphicSign = ($request->base64GraphicSign == "null" ? null : $request->base64GraphicSign);
@@ -371,26 +381,70 @@ class PdfSignerService
 
                 break;
             case TipoFirma::TIPO_FIRMA_VISIBLE:
-                // Dividir la cadena en partes
-                list($page, $x, $y, $width, $height) = explode(',', $posSign);
+                if (
+                    ($fieldSign === null || $fieldSign == "") &&
+                    ($posSign !== null && $posSign != "")
+                ) {
+                    // Dividir la cadena en partes
+                    list($page, $x, $y, $width, $height) = explode(',', $posSign);
 
-                // Convertir los valores a enteros (si es necesario)
-                $page = (int) $page;
-                $x = (int) $x;
-                $y = (int) $y;
-                $width = (int) $width;
-                $height = (int) $height;
+                    // Convertir los valores a enteros (si es necesario)
+                    $page = (int) $page;
+                    $x = (int) $x;
+                    $y = (int) $y;
+                    $width = (int) $width;
+                    $height = (int) $height;
 
-                // Verifica si la página especificada existe
-                if ($page > $lastPage) {
-                    $page = $lastPage;
-                    // $this->deleteFiles($arrDocs);
-                    // $logService->log("Page $page dont exist in document.");
-                    // return $responseService->error("Page $page dont exist in document.", 400);
+                    // Verifica si la página especificada existe
+                    if ($page > $lastPage) {
+                        $page = $lastPage;
+                        // $this->deleteFiles($arrDocs);
+                        // $logService->log("Page $page dont exist in document.");
+                        // return $responseService->error("Page $page dont exist in document.", 400);
+                    }
                 }
 
                 // Decodificar los datos de la imagen en base64
                 if ($imgSign !== null && $imgSign !== "") {
+                    if (
+                        ($fieldSign === null || $fieldSign == "") &&
+                        ($posSign !== null && $posSign != "")
+                    ) {
+                        // Agrega un campo de firma
+                        $field = $signer->addSignatureField(
+                            $timestamp,
+                            $page,
+                            $defaultPosSign,
+                            ['x' => $x, 'y' => $y],
+                            $width,
+                            $height
+                        );
+                    } else {
+                        $signatureFieldNames = \SetaPDF_Signer::getSignatureFieldNames($document);
+                        $field = null;
+
+                        foreach ($signatureFieldNames as $signatureFieldName) {
+                            if ($signatureFieldName == $fieldSign) {
+                                $field = \SetaPDF_Signer_SignatureField::get($document, $signatureFieldName);
+
+                                if ($field->getValue() !== null) {
+                                    return $responseService->error('Invalid fieldSign', 400, "El campo de firma $fieldSign no está disponible para firmar");
+                                }
+                            }
+                        }
+
+                        if (!$field) {
+                            return $responseService->error('Invalid fieldSign', 400, "El campo de firma $fieldSign no existe en el documento");
+                        }
+
+                        // Obtener ancho y alto directamente
+                        $width = $field->getWidth();
+                        $height = $field->getHeight();
+                    }
+
+                    // Establece el nombre del campo de firma
+                    $signer->setSignatureFieldName($field->getQualifiedName());
+
                     $imgData = base64_decode($imgSign);
 
                     // Nombres de archivo
@@ -413,9 +467,6 @@ class PdfSignerService
 
                     $imageXObject = $image->toXObject($document);
 
-                    // Define el tamaño de la imagen
-                    // $width = $imageXObject->getWidth();
-                    // $height = $imageXObject->getHeight();
                     $xObject = \SetaPDF_Core_XObject_Form::create($document, [0, 0, $width, $height]);
 
                     // Dibuja la imagen en el canvas
@@ -478,22 +529,48 @@ class PdfSignerService
                     // Crea una instancia de apariencia XObject
                     $appearance = new \SetaPDF_Signer_Signature_Appearance_XObject($xObject);
 
-                    // Agrega un campo de firma
-                    $field = $signer->addSignatureField(
-                        $timestamp,
-                        $page,
-                        $defaultPosSign,
-                        ['x' => $x, 'y' => $y],
-                        $width,
-                        $height
-                    );
+                    // Asigna la apariencia al firmador
+                    $signer->setAppearance($appearance);
+                } else {
+                    if (
+                        ($fieldSign === null || $fieldSign == "") &&
+                        ($posSign !== null && $posSign != "")
+                    ) {
+                        // Agrega un campo de firma
+                        $field = $signer->addSignatureField(
+                            $timestamp,
+                            $page,
+                            $defaultPosSign,
+                            ['x' => $x, 'y' => $y],
+                            $width,
+                            $height
+                        );
+                    } else {
+                        $signatureFieldNames = \SetaPDF_Signer::getSignatureFieldNames($document);
+                        $field = null;
+
+                        foreach ($signatureFieldNames as $signatureFieldName) {
+                            if ($signatureFieldName == $fieldSign) {
+                                $field = \SetaPDF_Signer_SignatureField::get($document, $signatureFieldName);
+
+                                if ($field->getValue() !== null) {
+                                    return $responseService->error('Invalid fieldSign', 400, "El campo de firma $fieldSign no está disponible para firmar");
+                                }
+                            }
+                        }
+
+                        if (!$field) {
+                            return $responseService->error('Invalid fieldSign', 400, "El campo de firma $fieldSign no existe en el documento");
+                        }
+
+                        // Obtener ancho y alto directamente
+                        $width = $field->getWidth();
+                        $height = $field->getHeight();
+                    }
 
                     // Establece el nombre del campo de firma
                     $signer->setSignatureFieldName($field->getQualifiedName());
 
-                    // Asigna la apariencia al firmador
-                    $signer->setAppearance($appearance);
-                } else {
                     // Si no se proporciona imagen, crea un XObject vacío
                     $xObject = \SetaPDF_Core_XObject_Form::create($document, [0, 0, $width, $height]);
 
@@ -545,6 +622,38 @@ class PdfSignerService
                     // Crea una instancia de apariencia XObject
                     $appearance = new \SetaPDF_Signer_Signature_Appearance_XObject($xObject);
 
+                    // Asigna la apariencia al firmador
+                    $signer->setAppearance($appearance);
+                }
+                break;
+            case TipoFirma::TIPO_FIRMA_VISIBLE_DOS:
+                if (
+                    ($fieldSign === null || $fieldSign == "") &&
+                    ($posSign !== null && $posSign != "")
+                ) {
+                    // Dividir la cadena en partes
+                    list($page, $x, $y, $width, $height) = explode(',', $posSign);
+
+                    // Convertir los valores a enteros (si es necesario)
+                    $page = (int) $page;
+                    $x = (int) $x;
+                    $y = (int) $y;
+                    $width = (int) $width;
+                    $height = (int) $height;
+
+                    // Verifica si la página especificada existe
+                    if ($page > $lastPage) {
+                        $page = $lastPage;
+                        // $this->deleteFiles($arrDocs);
+                        // $logService->log("Page $page dont exist in document.");
+                        // return $responseService->error("Page $page dont exist in document.", 400);
+                    }
+                }
+
+                if (
+                    ($fieldSign === null || $fieldSign == "") &&
+                    ($posSign !== null && $posSign != "")
+                ) {
                     // Agrega un campo de firma
                     $field = $signer->addSignatureField(
                         $timestamp,
@@ -554,42 +663,28 @@ class PdfSignerService
                         $width,
                         $height
                     );
+                } else {
+                    $signatureFieldNames = \SetaPDF_Signer::getSignatureFieldNames($document);
+                    $field = null;
 
-                    // Establece el nombre del campo de firma
-                    $signer->setSignatureFieldName($field->getQualifiedName());
+                    foreach ($signatureFieldNames as $signatureFieldName) {
+                        if ($signatureFieldName == $fieldSign) {
+                            $field = \SetaPDF_Signer_SignatureField::get($document, $signatureFieldName);
 
-                    // Asigna la apariencia al firmador
-                    $signer->setAppearance($appearance);
+                            if ($field->getValue() !== null) {
+                                return $responseService->error('Invalid fieldSign', 400, "El campo de firma $fieldSign no está disponible para firmar");
+                            }
+                        }
+                    }
+
+                    if (!$field) {
+                        return $responseService->error('Invalid fieldSign', 400, "El campo de firma $fieldSign no existe en el documento");
+                    }
+
+                    // Obtener ancho y alto directamente
+                    $width = $field->getWidth();
+                    $height = $field->getHeight();
                 }
-                break;
-            case TipoFirma::TIPO_FIRMA_VISIBLE_DOS:
-                // Dividir la cadena en partes
-                list($page, $x, $y, $width, $height) = explode(',', $posSign);
-
-                // Convertir los valores a enteros (si es necesario)
-                $page = (int) $page;
-                $x = (int) $x;
-                $y = (int) $y;
-                $width = (int) $width;
-                $height = (int) $height;
-
-                // Verifica si la página especificada existe
-                if ($page > $lastPage) {
-                    $page = $lastPage;
-                    // $this->deleteFiles($arrDocs);
-                    // $logService->log("Page $page dont exist in document.");
-                    // return $responseService->error("Page $page dont exist in document.", 400);
-                }
-
-                // Agrega un campo de firma
-                $field = $signer->addSignatureField(
-                    $timestamp,
-                    $page,
-                    $defaultPosSign,
-                    ['x' => $x, 'y' => $y],
-                    $width,
-                    $height
-                );
 
                 // Establece el nombre del campo de firma
                 $signer->setSignatureFieldName($field->getQualifiedName());
