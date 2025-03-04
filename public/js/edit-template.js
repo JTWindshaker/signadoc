@@ -7,7 +7,7 @@ let pdfDoc = null,
     pageNum = 1,
     pageIsRendering = false,
     pageNumIsPending = null,
-    scale = 0.5;
+    scale = 1;
 let pdfData = null;
 let viewAll = false;
 let renderTask = null;
@@ -24,8 +24,7 @@ const nextPageBtn = document.getElementById('next-page');
 const zoomInBtn = document.getElementById('zoom-in');
 const zoomOutBtn = document.getElementById('zoom-out');
 const guardarCamposBtn = document.getElementById('guardar-campos');
-const downloadBtn = document.getElementById('download-pdf');
-const toggleViewCheckbox = document.getElementById('toggle-view-mode');
+// const toggleViewCheckbox = document.getElementById('toggle-view-mode');
 
 // Panel de propiedades
 const fieldPropertiesPanel = document.getElementById('field-properties');
@@ -177,36 +176,36 @@ const renderAllPages = () => {
     }
 };
 
-toggleViewCheckbox.addEventListener('change', () => {
-    viewAll = toggleViewCheckbox.checked;
+// toggleViewCheckbox.addEventListener('change', () => {
+//     viewAll = toggleViewCheckbox.checked;
 
-    if (viewAll) {
-        mostrarControlesEdicion(false);
-        renderAllPages();
-    } else {
-        container.innerHTML = "";
-        container.appendChild(singleCanvas);
+//     if (viewAll) {
+//         mostrarControlesEdicion(false);
+//         renderAllPages();
+//     } else {
+//         container.innerHTML = "";
+//         container.appendChild(singleCanvas);
 
-        draggableFields.forEach(fieldObj => {
-            const pdfPageHeight = singleCanvas.height / scale;
-            fieldObj.container.style.position = "absolute";
-            fieldObj.container.style.display = "block";
-            fieldObj.container.style.left = (fieldObj.originalPdfData.pdfX * scale) + "px";
-            fieldObj.container.style.top = ((pdfPageHeight - fieldObj.originalPdfData.pdfY - fieldObj.originalPdfData.pdfFieldHeight) * scale) + "px";
-            fieldObj.container.style.width = (fieldObj.originalPdfData.pdfFieldWidth * scale) + "px";
-            fieldObj.container.style.height = (fieldObj.originalPdfData.pdfFieldHeight * scale) + "px";
+//         draggableFields.forEach(fieldObj => {
+//             const pdfPageHeight = singleCanvas.height / scale;
+//             fieldObj.container.style.position = "absolute";
+//             fieldObj.container.style.display = "block";
+//             fieldObj.container.style.left = (fieldObj.originalPdfData.pdfX * scale) + "px";
+//             fieldObj.container.style.top = ((pdfPageHeight - fieldObj.originalPdfData.pdfY - fieldObj.originalPdfData.pdfFieldHeight) * scale) + "px";
+//             fieldObj.container.style.width = (fieldObj.originalPdfData.pdfFieldWidth * scale) + "px";
+//             fieldObj.container.style.height = (fieldObj.originalPdfData.pdfFieldHeight * scale) + "px";
 
-            if (fieldObj.type === "text" || fieldObj.type === "dropdown") {
-                fieldObj.fieldElement.style.fontSize = (fieldObj.properties.fontSize * scale) + "px";
-            }
+//             if (fieldObj.type === "text" || fieldObj.type === "dropdown") {
+//                 fieldObj.fieldElement.style.fontSize = (fieldObj.properties.fontSize * scale) + "px";
+//             }
 
-            container.appendChild(fieldObj.container);
-        });
+//             container.appendChild(fieldObj.container);
+//         });
 
-        mostrarControlesEdicion(true);
-        renderSinglePage(num = pageNum, isDB = false);
-    }
-});
+//         mostrarControlesEdicion(true);
+//         renderSinglePage(num = pageNum, isDB = false);
+//     }
+// });
 
 document.addEventListener('click', () => {
     draggableFields.forEach(fieldObj => {
@@ -219,7 +218,6 @@ document.addEventListener('click', () => {
 });
 
 const idTemplate = $('#idTemplate').val();
-
 $(document).ready(function () {
     loadFields();
     loadTemplate(idTemplate);
@@ -283,6 +281,15 @@ function loadFields() {
                                 inputField.style.fontStyle = propiedades.fontStyle;
                                 inputField.style.fontWeight = propiedades.fontWeight;
                                 inputField.style.textDecoration = propiedades.textDecoration;
+
+                                inputField.addEventListener("input", function () {
+                                    const fieldObj = draggableFields.find(field => field.fieldElement === inputField);
+
+                                    if (fieldObj) {
+                                        fieldObj.properties.text = inputField.value;
+                                        fieldObj.name = inputField.value;
+                                    }
+                                });
 
                                 containerDiv.appendChild(inputField);
                                 resizeHandle.className = "resize-handle";
@@ -431,7 +438,15 @@ function loadFields() {
                                 selectField.style.fontStyle = propiedades.fontStyle;
                                 selectField.style.fontWeight = propiedades.fontWeight;
                                 selectField.style.textDecoration = propiedades.textDecoration;
-                                selectField.style.value = propiedades.value;
+                                selectField.value = propiedades.value;
+
+                                selectField.addEventListener("change", function () {
+                                    const fieldObj = draggableFields.find(field => field.fieldElement === selectField);
+
+                                    if (fieldObj) {
+                                        fieldObj.properties.value = selectField.value;
+                                    }
+                                });
 
                                 containerDiv.appendChild(selectField);
                                 resizeHandle.className = "resize-handle";
@@ -689,7 +704,7 @@ async function loadPDF(pdfUrl, annotations) {
             pdfDoc = pdfDoc_;
             pageCountSpan.textContent = pdfDoc.numPages;
             viewAll = false;
-            toggleViewCheckbox.checked = false;
+            // toggleViewCheckbox.checked = false;
             mostrarControlesEdicion(true);
             await renderSinglePage(pageNum, annotations, true);
         }).catch(err => {
@@ -757,6 +772,15 @@ const loadFieldsIntoTemplate = async (fields, isDB) => {
                     inputField.style.fontStyle = propiedades.fontStyle;
                     inputField.style.fontWeight = propiedades.fontWeight;
                     inputField.style.textDecoration = propiedades.textDecoration;
+
+                    inputField.addEventListener("input", function () {
+                        const fieldObj = draggableFields.find(field => field.fieldElement === inputField);
+
+                        if (fieldObj) {
+                            fieldObj.properties.text = inputField.value;
+                            fieldObj.name = inputField.value;
+                        }
+                    });
 
                     containerDiv.appendChild(inputField);
                     resizeHandle.className = "resize-handle";
@@ -905,7 +929,15 @@ const loadFieldsIntoTemplate = async (fields, isDB) => {
                     selectField.style.fontStyle = propiedades.fontStyle;
                     selectField.style.fontWeight = propiedades.fontWeight;
                     selectField.style.textDecoration = propiedades.textDecoration;
-                    selectField.style.value = propiedades.value;
+                    selectField.value = propiedades.value;
+
+                    selectField.addEventListener("change", function () {
+                        const fieldObj = draggableFields.find(field => field.fieldElement === selectField);
+
+                        if (fieldObj) {
+                            fieldObj.properties.value = selectField.value;
+                        }
+                    });
 
                     containerDiv.appendChild(selectField);
                     resizeHandle.className = "resize-handle";
@@ -957,6 +989,7 @@ const loadFieldsIntoTemplate = async (fields, isDB) => {
                             fontWeight: propiedades.fontWeight,
                             textDecoration: propiedades.textDecoration,
                             options: propiedades.options,
+                            value: propiedades.value,
                         }
                     };
 
@@ -1322,6 +1355,7 @@ const loadFieldsIntoTemplate = async (fields, isDB) => {
                             fontWeight: propiedades.fontWeight,
                             textDecoration: propiedades.textDecoration,
                             options: propiedades.options,
+                            value: propiedades.value,
                         }
                     };
 
@@ -1820,44 +1854,6 @@ applyPropertiesBtn.addEventListener('click', () => {
     fieldPropertiesPanel.style.display = "none";
 });
 
-function getStandardFont(props) {
-    if (props.fontFamily === "Helvetica") {
-        if (props.fontWeight == "bold" && props.fontStyle == "italic") return PDFLib.StandardFonts.HelveticaBoldOblique;
-        if (props.fontWeight == "bold") return PDFLib.StandardFonts.HelveticaBold;
-        if (props.fontStyle == "italic") return PDFLib.StandardFonts.HelveticaOblique;
-        return PDFLib.StandardFonts.Helvetica;
-    }
-
-    if (props.fontFamily === "TimesRoman") {
-        if (props.fontWeight == "bold" && props.fontStyle == "italic") return PDFLib.StandardFonts.TimesRomanBoldItalic;
-        if (props.fontWeight == "bold") return PDFLib.StandardFonts.TimesRomanBold;
-        if (props.fontStyle == "italic") return PDFLib.StandardFonts.TimesRomanItalic;
-        return PDFLib.StandardFonts.TimesRoman;
-    }
-
-    if (props.fontFamily === "Courier") {
-        if (props.fontWeight == "bold" && props.fontStyle == "italic") return PDFLib.StandardFonts.CourierBoldOblique;
-        if (props.fontWeight == "bold") return PDFLib.StandardFonts.CourierBold;
-        if (props.fontStyle == "italic") return PDFLib.StandardFonts.CourierOblique;
-        return PDFLib.StandardFonts.Courier;
-    }
-
-    return PDFLib.StandardFonts.Helvetica;
-}
-
-function dataURLtoUint8Array(dataURL) {
-    const base64 = dataURL.split(',')[1];
-    const binaryString = atob(base64);
-    const len = binaryString.length;
-    const bytes = new Uint8Array(len);
-
-    for (let i = 0; i < len; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-    }
-
-    return bytes;
-}
-
 guardarCamposBtn.addEventListener('click', async () => {
     if (draggableFields.length === 0) return;
 
@@ -1902,36 +1898,24 @@ guardarCamposBtn.addEventListener('click', async () => {
     });
 });
 
-downloadBtn.addEventListener('click', () => {
-    if (!pdfData) return;
+// toggleViewCheckbox.addEventListener('change', () => {
+//     viewAll = toggleViewCheckbox.checked;
 
-    const blob = new Blob([pdfData], { type: 'application/pdf' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = "modificado.pdf";
-    a.click();
-    URL.revokeObjectURL(url);
-});
+//     if (viewAll) {
+//         mostrarControlesEdicion(false);
+//         renderAllPages();
+//     } else {
+//         container.innerHTML = "";
+//         container.appendChild(singleCanvas);
 
-toggleViewCheckbox.addEventListener('change', () => {
-    viewAll = toggleViewCheckbox.checked;
+//         draggableFields.forEach(fieldObj => {
+//             container.appendChild(fieldObj.container);
+//         });
 
-    if (viewAll) {
-        mostrarControlesEdicion(false);
-        renderAllPages();
-    } else {
-        container.innerHTML = "";
-        container.appendChild(singleCanvas);
-
-        draggableFields.forEach(fieldObj => {
-            container.appendChild(fieldObj.container);
-        });
-
-        mostrarControlesEdicion(true);
-        renderSinglePage(num = pageNum, isDB = false);
-    }
-});
+//         mostrarControlesEdicion(true);
+//         renderSinglePage(num = pageNum, isDB = false);
+//     }
+// });
 
 function mostrarControlesEdicion(mostrar) {
     const displayValue = mostrar ? "inline-block" : "none";

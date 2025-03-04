@@ -321,132 +321,132 @@ class TemplateController extends Controller
         }
 
         // $scale = $request->scale;
-        $scale = 1;
+        // $scale = 1;
         $pdfFilename = $objPlantilla->ruta . "/" . $objPlantilla->nombre;
         $timestamp = Carbon::now()->format('YmdHis') . '' . Carbon::now()->microsecond;
 
-        // Cargar documento PDF
-        $writer = new \SetaPDF_Core_Writer_String();
+        // // Cargar documento PDF
+        // $writer = new \SetaPDF_Core_Writer_String();
 
-        try {
-            $document = \SetaPDF_Core_Document::loadByFilename(public_path("storage/" . $pdfFilename), $writer);
-        } catch (\SetaPDF_Core_Parser_CrossReferenceTable_Exception $th) {
-            return $this->responseService->error('Archivo inválido', 400, $th->getMessage());
-        }
+        // try {
+        //     $document = \SetaPDF_Core_Document::loadByFilename(public_path("storage/" . $pdfFilename), $writer);
+        // } catch (\SetaPDF_Core_Parser_CrossReferenceTable_Exception $th) {
+        //     return $this->responseService->error('Archivo inválido', 400, $th->getMessage());
+        // }
 
-        // Configura la apariencia del documento si tiene formulario
-        $acroForm = $document->getCatalog()->getAcroForm();
-        if ($acroForm->isNeedAppearancesSet()) {
-            $acroForm->setNeedAppearances(false);
-        }
+        // // Configura la apariencia del documento si tiene formulario
+        // $acroForm = $document->getCatalog()->getAcroForm();
+        // if ($acroForm->isNeedAppearancesSet()) {
+        //     $acroForm->setNeedAppearances(false);
+        // }
 
-        $pages = json_decode($request->fields);
-        foreach ($pages as $page => $pages) {
-            if (!empty($pages)) {
-                foreach ($pages as $field) {
-                    $pag = (int) $field->page;
-                    $x_canvas = (float) $field->x;
-                    $y_canvas = (float) $field->y;
-                    $width = (float) $field->width;
-                    $canvasWidth = $field->canvasWidth;
-                    $canvasHeight = $field->canvasHeight;
+        // $pages = json_decode($request->fields);
+        // foreach ($pages as $page => $pages) {
+        //     if (!empty($pages)) {
+        //         foreach ($pages as $field) {
+        //             $pag = (int) $field->page;
+        //             $x_canvas = (float) $field->x;
+        //             $y_canvas = (float) $field->y;
+        //             $width = (float) $field->width;
+        //             $canvasWidth = $field->canvasWidth;
+        //             $canvasHeight = $field->canvasHeight;
 
-                    $page = $document->getCatalog()->getPages()->getPage($pag);
-                    $pdfWidth = $page->getWidth();
-                    $pdfHeight = $page->getHeight();
+        //             $page = $document->getCatalog()->getPages()->getPage($pag);
+        //             $pdfWidth = $page->getWidth();
+        //             $pdfHeight = $page->getHeight();
 
-                    $scaleX = $pdfWidth / $canvasWidth;
-                    $scaleY = $pdfHeight / $canvasHeight;
-                    $x_pdf = $x_canvas * $scaleX;
+        //             $scaleX = $pdfWidth / $canvasWidth;
+        //             $scaleY = $pdfHeight / $canvasHeight;
+        //             $x_pdf = $x_canvas * $scaleX;
 
-                    switch ((int) $field->idField) {
-                        case TipoCampo::TIPO_CAMPO_TEXT:
-                        case TipoCampo::TIPO_CAMPO_SELECT:
-                            if ((int) $field->idField == TipoCampo::TIPO_CAMPO_SELECT) {
-                                $valueOption = (int) $field->value;
-                                $option = current(array_filter($field->options, fn($option) => $option->id === $valueOption));
-                                $text = $option ? $option->name : "";
-                            } else {
-                                $text = $field->text;
-                            }
+        //             switch ((int) $field->idField) {
+        //                 case TipoCampo::TIPO_CAMPO_TEXT:
+        //                 case TipoCampo::TIPO_CAMPO_SELECT:
+        //                     if ((int) $field->idField == TipoCampo::TIPO_CAMPO_SELECT) {
+        //                         $valueOption = (int) $field->value;
+        //                         $option = current(array_filter($field->options, fn($option) => $option->id === $valueOption));
+        //                         $text = $option ? $option->name : "";
+        //                     } else {
+        //                         $text = $field->text;
+        //                     }
 
-                            $padding = $field->padding;
-                            $fontSize = $field->fontSize;
-                            $fontColor = $field->fill;
+        //                     $padding = $field->padding;
+        //                     $fontSize = $field->fontSize;
+        //                     $fontColor = $field->fill;
 
-                            $dif_y = (($fontSize * 72) / 96) / $scale;
-                            $y_pdf = ($pdfHeight - ($y_canvas * $scaleY) - $dif_y);
+        //                     $dif_y = (($fontSize * 72) / 96) / $scale;
+        //                     $y_pdf = ($pdfHeight - ($y_canvas * $scaleY) - $dif_y);
 
-                            $canvas = $page->getCanvas();
+        //                     $canvas = $page->getCanvas();
 
-                            // $font = new \SetaPDF_Core_Font_Type0_Subset($document, public_path('fonts/DejaVuSansCondensed-BoldOblique.ttf'));
-                            // $font = new \SetaPDF_Core_Font_Type0_Subset($document, public_path('fonts/TimesNewRoman-BoldItalic.ttf'));
-                            $font = new \SetaPDF_Core_Font_Type0_Subset($document, public_path('fonts/Calibri-BoldItalic.ttf'));
+        //                     // $font = new \SetaPDF_Core_Font_Type0_Subset($document, public_path('fonts/DejaVuSansCondensed-BoldOblique.ttf'));
+        //                     // $font = new \SetaPDF_Core_Font_Type0_Subset($document, public_path('fonts/TimesNewRoman-BoldItalic.ttf'));
+        //                     $font = new \SetaPDF_Core_Font_Type0_Subset($document, public_path('fonts/Calibri-BoldItalic.ttf'));
 
-                            $textBlock = new \SetaPDF_Core_Text_Block($font);
-                            $textBlock->setTextWidth($width);
-                            $textBlock->setPadding($padding);
-                            $textBlock->setAlign($field->align);
-                            $textBlock->setFontSize($fontSize);
-                            $textBlock->setLineHeight($fontSize * 0.8);
-                            $textBlock->setTextColor($fontColor);
-                            $textBlock->setText($text);
-                            $textBlock->draw($canvas, $x_pdf, $y_pdf, $width);
-                            break;
-                        case TipoCampo::TIPO_CAMPO_QR:
-                            $height = (float) $field->height;
-                            $src = $field->src;
-                            $opacity = (float) $field->opacity;
+        //                     $textBlock = new \SetaPDF_Core_Text_Block($font);
+        //                     $textBlock->setTextWidth($width);
+        //                     $textBlock->setPadding($padding);
+        //                     $textBlock->setAlign($field->align);
+        //                     $textBlock->setFontSize($fontSize);
+        //                     $textBlock->setLineHeight($fontSize * 0.8);
+        //                     $textBlock->setTextColor($fontColor);
+        //                     $textBlock->setText($text);
+        //                     $textBlock->draw($canvas, $x_pdf, $y_pdf, $width);
+        //                     break;
+        //                 case TipoCampo::TIPO_CAMPO_QR:
+        //                     $height = (float) $field->height;
+        //                     $src = $field->src;
+        //                     $opacity = (float) $field->opacity;
 
-                            if (preg_match('/^data:image\/([a-zA-Z]+);base64,/', $src, $matches)) {
-                                $extension = $matches[1];
-                            } else {
-                                $extension = null;
-                            }
+        //                     if (preg_match('/^data:image\/([a-zA-Z]+);base64,/', $src, $matches)) {
+        //                         $extension = $matches[1];
+        //                     } else {
+        //                         $extension = null;
+        //                     }
 
-                            $img = str_replace('data:image/png;base64,', '', $src);
-                            $imgData = base64_decode($img);
+        //                     $img = str_replace('data:image/png;base64,', '', $src);
+        //                     $imgData = base64_decode($img);
 
-                            $image = new \Imagick();
-                            $image->readImageBlob($imgData);
+        //                     $image = new \Imagick();
+        //                     $image->readImageBlob($imgData);
 
-                            $image->setImageFormat('png');
-                            $image->stripImage();
-                            $image->setImageAlphaChannel(\Imagick::ALPHACHANNEL_ACTIVATE);
-                            $image->evaluateImage(\Imagick::EVALUATE_MULTIPLY, $opacity, \Imagick::CHANNEL_ALPHA);
+        //                     $image->setImageFormat('png');
+        //                     $image->stripImage();
+        //                     $image->setImageAlphaChannel(\Imagick::ALPHACHANNEL_ACTIVATE);
+        //                     $image->evaluateImage(\Imagick::EVALUATE_MULTIPLY, $opacity, \Imagick::CHANNEL_ALPHA);
 
-                            $imgFilename = "$timestamp-$pag.$extension";
-                            $image->writeImage(storage_path('app/public/' . $imgFilename));
+        //                     $imgFilename = "$timestamp-$pag.$extension";
+        //                     $image->writeImage(storage_path('app/public/' . $imgFilename));
 
-                            $image->clear();
-                            $image->destroy();
+        //                     $image->clear();
+        //                     $image->destroy();
 
-                            try {
-                                $imagePDF = \SetaPDF_Core_Image::getByPath(public_path('storage/' . $imgFilename))->toXObject($document);
-                            } catch (\SetaPDF_Core_Image_Exception $th) {
-                                return $this->responseService->error('Imagen no válida', 400, $th->getMessage());
-                            }
+        //                     try {
+        //                         $imagePDF = \SetaPDF_Core_Image::getByPath(public_path('storage/' . $imgFilename))->toXObject($document);
+        //                     } catch (\SetaPDF_Core_Image_Exception $th) {
+        //                         return $this->responseService->error('Imagen no válida', 400, $th->getMessage());
+        //                     }
 
-                            $y_pdf = ($pdfHeight - ($y_canvas * $scaleY)) - $height;
+        //                     $y_pdf = ($pdfHeight - ($y_canvas * $scaleY)) - $height;
 
-                            $canvas = $page->getCanvas();
-                            $imagePDF->draw($canvas, $x_canvas, $y_pdf, $width, $height);
+        //                     $canvas = $page->getCanvas();
+        //                     $imagePDF->draw($canvas, $x_canvas, $y_pdf, $width, $height);
 
-                            Storage::disk('local')->delete("/public/" . $imgFilename, $imgData);
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            }
-        }
+        //                     Storage::disk('local')->delete("/public/" . $imgFilename, $imgData);
+        //                     break;
+        //                 default:
+        //                     break;
+        //             }
+        //         }
+        //     }
+        // }
 
-        $document->save()->finish();
+        // $document->save()->finish();
 
         return $this->responseService->success(
-            [
-                'pdf' => base64_encode((string) $writer),
-            ],
+            // [
+            //     'pdf' => base64_encode((string) $writer),
+            // ],
             'Plantilla llenada correctamente'
         );
     }

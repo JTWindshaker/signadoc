@@ -26,26 +26,6 @@
     <input id="urlApp" type="hidden" name="urlApp" value="{{ config('app.url') }}">
     <input id="csrfToken" type="hidden" name="csrfToken" value="{{ csrf_token() }}">
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     <h1>Visualizador y Editor de PDF - Flattening (Solo Texto e Imagen)</h1>
 
     <!-- Controles para cargar y visualizar -->
@@ -56,17 +36,13 @@
         <span>Página: <span id="page-num"></span> / <span id="page-count"></span></span>
         <button id="zoom-in">Zoom In</button>
         <button id="zoom-out">Zoom Out</button>
-        {{-- <button id="add-field">Agregar Campo de Texto (Editable)</button>
-        <button id="add-dropdown">Agregar Lista Desplegable</button>
-        <button id="add-image">Agregar Campo de Imagen</button> --}}
-        <button id="guardar-campos" style="display:none;">Guardar y Aplanar PDF</button>
-        <button id="download-pdf" style="display:none;">Descargar PDF</button>
+        <button id="guardar-campos" style="display:none;">Guardar</button>
         <div id="toolbar"></div>
         <!-- Control para cambiar entre ver una página o todas -->
-        <label>
+        {{-- <label>
             <input type="checkbox" id="toggle-view-mode">
             Ver todas las páginas
-        </label>
+        </label> --}}
     </div>
 
     <!-- Panel de propiedades para campos de texto -->

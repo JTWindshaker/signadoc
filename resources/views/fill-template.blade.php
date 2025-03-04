@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-    <title>Fill Plantilla</title>
+    <title>Llenar Plantilla</title>
     <link rel="shortcut icon" href="{{ asset('images/favicon.ico') }}" />
 
     <!-- Required meta tags -->
@@ -27,7 +27,8 @@
     <input id="csrfToken" type="hidden" name="csrfToken" value="{{ csrf_token() }}">
 
     <!-- Modal -->
-    <div class="modal fade" id="modalFillFields" tabindex="-1" aria-labelledby="modalFillFieldsLabel" aria-hidden="true">
+    <div class="modal fade" id="modalFillFields" tabindex="-1" aria-labelledby="modalFillFieldsLabel"
+        aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
@@ -36,7 +37,7 @@
                 </div>
                 <div class="modal-body">
                     <div id="contFields">
-                        
+
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -46,8 +47,24 @@
         </div>
     </div>
 
-    <div id="toolbar"></div>
-    <div id="pdf-container"></div>
+    <h1>Visualizador y Llenado de PDF</h1>
+
+    <!-- Controles para cargar y visualizar -->
+    <div>
+        <button id="prev-page">Anterior</button>
+        <button id="next-page">Siguiente</button>
+        <span>Página: <span id="page-num"></span> / <span id="page-count"></span></span>
+        <button id="zoom-in">Zoom In</button>
+        <button id="zoom-out">Zoom Out</button>
+        <button id="fill-fields" onclick="openModalFillFields();">Llenar</button>
+        <button id="guardar-campos" style="display:none;">Guardar</button>
+    </div>
+
+    <!-- Contenedor donde se renderizará el PDF -->
+    <div id="pdf-container">
+        <!-- En modo una página se usa un canvas con id="pdf-render". En modo todas se crearán múltiples canvases -->
+        <canvas id="pdf-render"></canvas>
+    </div>
 
     <div id="spinner"
         style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
@@ -56,9 +73,14 @@
         </div>
     </div>
 
-    <!-- Scripts -->
+    <!-- Incluir PDF.js y configurar el worker -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/konva@9/konva.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+    </script>
+    <!-- Incluir pdf-lib (versión 1.17.1 para compatibilidad) -->
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+
     <script src="{{ asset('vendor/jquery/jquery.min.js') }}"></script>
     <script src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ asset('js/main.js') }}"></script>
