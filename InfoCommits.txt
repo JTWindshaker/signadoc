@@ -3,14 +3,10 @@
 =========================================
 
 *Cambios:*
--- Se agrega un nuevo tipo de campo y se crea uno para probar (Descripción)
+-- Se valida la excepción cuando el pdf enviado para firmar se encuentra protegido
 
 *Notas/Observaciones:*
 -- 
 
 *SQL:*
-#Se agrega un nuevo tipo de campo
-insert into tipo_campo(nombre, estado) values('textarea', true);
-
-#Se registra un campo llamado 'descripción' para probar el tipo de campo anterior
-insert into campo(tipo_campo_id, nombre, propiedades, estado) values(4, 'Descripcion', '{"border":"none","color":"#000000","container":{"className":"draggable","tabIndex":0,"width":150,"height":30},"fontFamily":"Helvetica","fontSize":12,"fontStyle":"normal","fontWeight":"normal","height":"100%","id":4,"idField":4,"isEditable":true,"name":"Descripción","pdfData":{"pdfFieldHeight":0,"pdfFieldWidth":0,"pdfPageHeight":0,"pdfPageWidth":0,"pdfX":0,"pdfY":0},"originalPdfData":{"pdfFieldHeight":0,"pdfFieldWidth":0,"pdfPageHeight":0,"pdfPageWidth":0,"pdfX":0,"pdfY":0},"outline":"none","text":"Descripción","textAlign":"left","textDecoration":"auto","type":"textarea","width":"100%"}', true);
+--

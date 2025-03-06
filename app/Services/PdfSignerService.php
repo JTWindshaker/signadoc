@@ -262,7 +262,16 @@ class PdfSignerService
         // Fin manejo de QR
 
         // Inicializar el firmador
-        $signer = new \SetaPDF_Signer($document);
+        try {
+            $signer = new \SetaPDF_Signer($document);
+        } catch (\SetaPDF_Core_SecHandler_Exception $th) {
+            $this->deleteFiles($arrDocs);
+            $logService->log("PDF Protegido");
+            $logService->log($th->getMessage());
+            $logService->log("Proceso finalizado", false, true);
+            return $responseService->error('PDF Protegido', 400, "El documento para firmar está protegido");
+        }
+
         // $signer->setSignatureContentLength(26000);
         $signer->setSignatureContentLength(80000);
 
