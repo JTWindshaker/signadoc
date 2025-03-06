@@ -2,6 +2,7 @@
 const TIPO_CAMPO_TEXT = 1;
 const TIPO_CAMPO_SELECT = 2;
 const TIPO_CAMPO_QR = 3;
+const TIPO_CAMPO_TEXT_AREA = 4;
 
 let pdfDoc = null,
     pageNum = 1,
@@ -1166,6 +1167,162 @@ const loadFieldsIntoTemplate = async (fields, isDB) => {
                     // });
                     break;
                 }
+
+                case TIPO_CAMPO_TEXT_AREA: {
+                    if (!pdfDoc) {
+                        alert("Primero carga un PDF.");
+                        return;
+                    }
+
+                    const inputField = document.createElement("textarea");
+                    const containerDiv = document.createElement("div");
+                    // const resizeHandle = document.createElement("div");
+                    // const buttonContainer = document.createElement("div");
+                    // const buttonSettings = document.createElement("button");
+                    // const buttonDelete = document.createElement("button");
+                    const objContainer = properties.container;
+                    const defaultWidth = objContainer.width * scale;
+                    const defaultHeight = objContainer.height * scale;
+                    const initialLeft = objContainer.left * scale;
+                    const initialTop = objContainer.top * scale;
+
+                    containerDiv.className = objContainer.className;
+                    containerDiv.tabIndex = objContainer.tabIndex;
+                    containerDiv.style.width = defaultWidth + "px";
+                    containerDiv.style.height = defaultHeight + "px";
+                    containerDiv.style.left = initialLeft + "px";
+                    containerDiv.style.top = initialTop + "px";
+                    containerDiv.dataset.originLeft = initialLeft / scale;
+                    containerDiv.dataset.originTop = initialTop / scale;
+                    containerDiv.dataset.originWidth = defaultWidth / scale;
+                    containerDiv.dataset.originHeight = defaultHeight / scale;
+
+                    // inputField.type = "text";
+                    inputField.dataset.type = "text";
+                    inputField.placeholder = propiedades.text;
+                    inputField.style.background = "transparent";
+                    inputField.style.position = "absolute";
+                    inputField.style.overflow = "hidden";
+                    inputField.style.resize = "none";
+                    inputField.style.width = propiedades.width;
+                    inputField.style.height = propiedades.height;
+                    inputField.style.border = propiedades.border;
+                    inputField.style.outline = propiedades.outline;
+                    inputField.style.textAlign = propiedades.textAlign;
+                    inputField.style.color = propiedades.color;
+                    inputField.style.fontFamily = propiedades.fontFamily;
+                    inputField.style.fontSize = (parseFloat(propiedades.fontSize) * scale) + "px";
+                    inputField.style.fontStyle = propiedades.fontStyle;
+                    inputField.style.fontWeight = propiedades.fontWeight;
+                    inputField.style.textDecoration = propiedades.textDecoration;
+
+                    inputField.addEventListener("input", function () {
+                        const fieldObj = draggableFields.find(field => field.fieldElement === inputField);
+
+                        if (fieldObj) {
+                            fieldObj.properties.text = inputField.value;
+                        }
+                    });
+
+                    containerDiv.appendChild(inputField);
+                    // resizeHandle.className = "resize-handle";
+                    // containerDiv.appendChild(resizeHandle);
+
+                    // buttonContainer.className = "field-buttons";
+                    // buttonSettings.innerHTML = "⚙️";
+                    // buttonSettings.title = "Propiedades";
+                    // buttonDelete.innerHTML = "🗑️";
+                    // buttonDelete.title = "Eliminar campo";
+
+                    // buttonContainer.appendChild(buttonSettings);
+                    // buttonContainer.appendChild(buttonDelete);
+                    // containerDiv.appendChild(buttonContainer);
+
+                    container.appendChild(containerDiv);
+                    // makeDraggable(containerDiv);
+                    // makeResizable(containerDiv, resizeHandle);
+
+                    // Al crear el campo se calcula la posición base en coordenadas PDF y se guarda en originalPdfData
+                    properties.pdfData.pdfX = initialLeft / scale;
+                    properties.pdfData.pdfFieldWidth = defaultWidth / scale;
+                    properties.pdfData.pdfFieldHeight = defaultHeight / scale;
+                    properties.pdfData.pdfY = (singleCanvas.height - initialTop - defaultHeight) / scale;
+
+                    const fieldObj = {
+                        container: containerDiv,
+                        fieldElement: inputField, // Se crea apartir de las propiedades principales en db
+                        pdfData: properties.pdfData,
+                        originalPdfData: properties.pdfData,
+                        page: properties.page,
+                        originalPage: properties.page,
+                        id: Date.now(),
+                        idField: properties.idField,
+                        isEditable: properties.isEditable,
+                        name: properties.name,
+                        type: "textarea",
+                        properties: {
+                            text: propiedades.text,
+                            width: propiedades.width,
+                            height: propiedades.height,
+                            border: propiedades.border,
+                            outline: propiedades.outline,
+                            textAlign: propiedades.textAlign,
+                            color: propiedades.color,
+                            fontFamily: propiedades.fontFamily,
+                            fontSize: propiedades.fontSize,
+                            fontStyle: propiedades.fontStyle,
+                            fontWeight: propiedades.fontWeight,
+                            textDecoration: propiedades.textDecoration,
+                        }
+                    };
+
+                    draggableFields.push(fieldObj);
+                    guardarCamposBtn.style.display = "inline-block";
+
+                    // containerDiv.addEventListener("click", (e) => {
+                    //     e.stopPropagation();
+                    //     hideAllButtonContainersExcept(containerDiv);
+
+                    //     const buttonContainer = containerDiv.querySelector('.field-buttons');
+                    //     if (buttonContainer) {
+                    //         buttonContainer.style.display = "block";
+                    //     }
+
+                    //     activeFieldObj = fieldObj;
+                    // });
+
+                    // containerDiv.addEventListener("focus", () => {
+                    //     hideAllButtonContainersExcept(containerDiv);
+
+                    //     const buttonContainer = containerDiv.querySelector('.field-buttons');
+                    //     if (buttonContainer) {
+                    //         buttonContainer.style.display = "block";
+                    //     }
+
+                    //     activeFieldObj = fieldObj;
+                    // });
+
+                    // containerDiv.addEventListener("blur", () => {
+                    //     buttonContainer.style.display = "none";
+                    // });
+
+                    // buttonDelete.addEventListener("click", (e) => {
+                    //     e.stopPropagation();
+                    //     containerDiv.remove();
+                    //     draggableFields = draggableFields.filter(item => item.container !== containerDiv);
+
+                    //     if (draggableFields.length == 0) {
+                    //         guardarCamposBtn.style.display = "none";
+                    //     }
+                    // });
+
+                    // buttonSettings.addEventListener("click", (e) => {
+                    //     e.stopPropagation();
+                    //     activeFieldObj = fieldObj;
+                    //     showPropertiesPanel(fieldObj);
+                    // });
+                    break;
+                }
                 default:
                     break;
             }
@@ -1529,6 +1686,136 @@ const loadFieldsIntoTemplate = async (fields, isDB) => {
                     // });
                     break;
                 }
+
+                case TIPO_CAMPO_TEXT_AREA: {
+                    if (!pdfDoc) {
+                        alert("Primero carga un PDF.");
+                        return;
+                    }
+
+                    const inputField = field.fieldElement;
+                    inputField.style.fontSize = (parseFloat(propiedades.fontSize) * scale) + "px";
+
+                    const containerDiv = field.container;
+                    // $(containerDiv).html("");
+                    // const resizeHandle = document.createElement("div");
+                    // const buttonContainer = document.createElement("div");
+                    // const buttonSettings = document.createElement("button");
+                    // const buttonDelete = document.createElement("button");
+
+                    const defaultWidth = containerDiv.dataset.originWidth * scale;
+                    const defaultHeight = containerDiv.dataset.originHeight * scale;
+                    const initialLeft = containerDiv.dataset.originLeft * scale;
+                    const initialTop = containerDiv.dataset.originTop * scale;
+
+                    containerDiv.style.width = defaultWidth + "px";
+                    containerDiv.style.height = defaultHeight + "px";
+                    containerDiv.style.left = initialLeft + "px";
+                    containerDiv.style.top = initialTop + "px";
+
+                    $(containerDiv).append(inputField);
+                    // resizeHandle.className = "resize-handle";
+                    // $(containerDiv).append(resizeHandle);
+
+                    // buttonContainer.className = "field-buttons";
+                    // buttonSettings.innerHTML = "⚙️";
+                    // buttonSettings.title = "Propiedades";
+                    // buttonDelete.innerHTML = "🗑️";
+                    // buttonDelete.title = "Eliminar campo";
+
+                    // buttonContainer.appendChild(buttonSettings);
+                    // buttonContainer.appendChild(buttonDelete);
+                    // containerDiv.appendChild(buttonContainer);
+
+                    if (pageNum == field.page) {
+                        container.appendChild(containerDiv);
+                    }
+
+                    // makeDraggable(containerDiv);
+                    // makeResizable(containerDiv, resizeHandle);
+
+                    // Al crear el campo se calcula la posición base en coordenadas PDF y se guarda en originalPdfData
+                    field.pdfData.pdfX = initialLeft / scale;
+                    field.pdfData.pdfFieldWidth = defaultWidth / scale;
+                    field.pdfData.pdfFieldHeight = defaultHeight / scale;
+                    field.pdfData.pdfY = (singleCanvas.height - initialTop - defaultHeight) / scale;
+
+                    const fieldObj = {
+                        container: containerDiv,
+                        fieldElement: inputField, // Se crea apartir de las propiedades principales en db
+                        pdfData: field.pdfData,
+                        originalPdfData: field.pdfData,
+                        page: field.page,
+                        originalPage: field.page,
+                        id: Date.now(),
+                        idField: field.idField,
+                        isEditable: field.isEditable,
+                        name: field.name,
+                        type: "textarea",
+                        properties: {
+                            text: propiedades.text,
+                            width: propiedades.width,
+                            height: propiedades.height,
+                            border: propiedades.border,
+                            outline: propiedades.outline,
+                            textAlign: propiedades.textAlign,
+                            color: propiedades.color,
+                            fontFamily: propiedades.fontFamily,
+                            fontSize: propiedades.fontSize,
+                            fontStyle: propiedades.fontStyle,
+                            fontWeight: propiedades.fontWeight,
+                            textDecoration: propiedades.textDecoration,
+                        }
+                    };
+
+                    draggableFields.push(fieldObj);
+                    guardarCamposBtn.style.display = "inline-block";
+
+                    // containerDiv.addEventListener("click", (e) => {
+                    //     e.stopPropagation();
+                    //     hideAllButtonContainersExcept(containerDiv);
+
+                    //     const buttonContainer = containerDiv.querySelector('.field-buttons');
+                    //     if (buttonContainer) {
+                    //         buttonContainer.style.display = "block";
+                    //     }
+
+                    //     activeFieldObj = fieldObj;
+                    // });
+
+                    // containerDiv.addEventListener("focus", () => {
+                    //     hideAllButtonContainersExcept(containerDiv);
+
+                    //     const buttonContainer = containerDiv.querySelector('.field-buttons');
+                    //     if (buttonContainer) {
+                    //         buttonContainer.style.display = "block";
+                    //     }
+
+                    //     activeFieldObj = fieldObj;
+                    // });
+
+                    // containerDiv.addEventListener("blur", () => {
+                    //     buttonContainer.style.display = "none";
+                    // });
+
+                    // buttonDelete.addEventListener("click", (e) => {
+                    //     e.stopPropagation();
+                    //     containerDiv.remove();
+                    //     draggableFields = draggableFields.filter(item => item.container !== containerDiv);
+
+                    //     if (draggableFields.length == 0) {
+                    //         guardarCamposBtn.style.display = "none";
+                    //     }
+                    // });
+
+                    // buttonSettings.addEventListener("click", (e) => {
+                    //     e.stopPropagation();
+                    //     activeFieldObj = fieldObj;
+                    //     showPropertiesPanel(fieldObj);
+                    // });
+                    break;
+                }
+
                 default:
                     break;
             }
@@ -1603,7 +1890,7 @@ function updateDraggableFields() {
             fieldObj.container.style.width = (fieldObj.originalPdfData.pdfFieldWidth * scale) + "px";
             fieldObj.container.style.height = (fieldObj.originalPdfData.pdfFieldHeight * scale) + "px";
 
-            if (fieldObj.type === "text" || fieldObj.type === "dropdown") {
+            if (fieldObj.type === "text" || fieldObj.type === "dropdown" || fieldObj.type === "textarea") {
                 fieldObj.fieldElement.style.fontSize = (fieldObj.properties.fontSize * scale) + "px";
             }
         } else {
@@ -1980,6 +2267,34 @@ guardarCamposBtn.addEventListener('click', async () => {
                     console.error("La URL de la imagen no es válida:", imageDataUrl);
                     continue;
                 }
+            } else if (fieldObj.type === "textarea") {
+                let font, fontSize = 12, color = PDFLib.rgb(0, 0, 0);
+
+                if (fieldObj.properties) {
+                    const standardFont = getStandardFont(fieldObj.properties);
+                    font = await pdfDocLib.embedFont(standardFont);
+                    fontSize = fieldObj.properties.fontSize || 12;
+
+                    const colorHex = fieldObj.properties.color || "#000000";
+                    const r = parseInt(colorHex.substring(1, 3), 16) / 255;
+                    const g = parseInt(colorHex.substring(3, 5), 16) / 255;
+                    const b = parseInt(colorHex.substring(5, 7), 16) / 255;
+                    color = PDFLib.rgb(r, g, b);
+                } else {
+                    font = await pdfDocLib.embedFont(PDFLib.StandardFonts.Helvetica);
+                }
+
+                const topY = (pdfY + pdfFieldHeight) - fontSize;
+
+                targetPage.drawText(fieldObj.fieldElement.value, {
+                    maxWidth: parseFloat(fieldObj.fieldElement.getBoundingClientRect().width),
+                    lineHeight: fontSize * 1.2,
+                    x: pdfX,
+                    y: topY,
+                    size: fontSize,
+                    font: font,
+                    color: color,
+                });
             }
         }
 
@@ -2119,127 +2434,34 @@ function getStandardFont(props) {
 // });
 
 
-// Código Nuevo Llenado
-function openModalFillFields() {
-    loadFieldsIntoModal();
-    const modal = new bootstrap.Modal(document.getElementById('modalFillFields'), {
-        // backdrop: false
-    });
+// Código Nuevo Llenado/
+// function saveTemplate() {
+//     ajaxRequest({
+//         url: '/fill-template/save-template',
+//         method: 'POST',
+//         data: {
+//             scale: SCALE,
+//             idTemplate: idTemplate,
+//             fields: JSON.stringify(annotationsData)
+//         },
+//         onSuccess: function (response) {
+//             console.log('Plantilla guardada exitosamente:', response);
+//             alert('Plantilla guardada correctamente.');
+//             // window.location.href = "/template";
 
-    modal.show();
-}
+//             let pdfBase64 = response.data.pdf;
+//             let pdfBlob = new Blob([Uint8Array.from(atob(pdfBase64), c => c.charCodeAt(0))], { type: 'application/pdf' });
 
-function saveTemplate() {
-    ajaxRequest({
-        url: '/fill-template/save-template',
-        method: 'POST',
-        data: {
-            scale: SCALE,
-            idTemplate: idTemplate,
-            fields: JSON.stringify(annotationsData)
-        },
-        onSuccess: function (response) {
-            console.log('Plantilla guardada exitosamente:', response);
-            alert('Plantilla guardada correctamente.');
-            // window.location.href = "/template";
-
-            let pdfBase64 = response.data.pdf;
-            let pdfBlob = new Blob([Uint8Array.from(atob(pdfBase64), c => c.charCodeAt(0))], { type: 'application/pdf' });
-
-            let downloadLink = document.createElement('a');
-            downloadLink.href = URL.createObjectURL(pdfBlob);
-            downloadLink.download = 'archivo.pdf';
-            document.body.appendChild(downloadLink);
-            downloadLink.click();
-            document.body.removeChild(downloadLink);
-        },
-        onError: function (xhr, status, error) {
-            console.error('Error al guardar la plantilla:', status, error);
-            alert('Ocurrió un error al guardar la plantilla.');
-        }
-    });
-}
-
-function loadFieldsIntoModal() {
-    const $contFields = $('#contFields');
-    $contFields.html("");
-
-    Object.values(annotationsData).forEach((pageFields, pageIndex) => {
-        // Agregar un encabezado con el número de la página
-        const pageHeaderHTML = `<h1 class="page-header">Página ${pageIndex + 1}</h1>`;
-        $contFields.append(pageHeaderHTML);
-
-        // Recorrer los campos de la página actual
-        pageFields.forEach(field => {
-            if (!field.isEditable) return;
-
-            const typeField = parseInt(field.idField);
-
-            switch (typeField) {
-                case TIPO_CAMPO_TEXT: {
-                    const textFieldHTML = `
-                        <div class="form-group">
-                            <label for="${field.id}">${field.name}</label>
-                            <input type="text" id="field_${field.id}" name="${field.id}" 
-                                class="form-control inputFieldAnnotation" data-tipo="${field.idField}" data-pagina="${field.page}" data-id="${field.id}" placeholder="${field.name}" 
-                                value="${field.text}" maxlength="${field.maxChar}">
-                        </div>
-                    `;
-                    $contFields.append(textFieldHTML);
-                    break;
-                }
-
-                case TIPO_CAMPO_SELECT: {
-                    const optionsHTML = field.options.map(option => `
-                        <option value="${option.id}" ${option.id == field.value ? 'selected' : ''}>
-                            ${option.name}
-                        </option>
-                    `).join('');
-
-                    const selectFieldHTML = `
-                        <div class="form-group">
-                            <label for="${field.id}">${field.name}</label>
-                            <select id="field_${field.id}" name="${field.id}" class="form-control inputFieldAnnotation" data-tipo="${field.idField}" data-pagina="${field.page}" data-id="${field.id}">
-                                ${optionsHTML}
-                            </select>
-                        </div>
-                    `;
-                    $contFields.append(selectFieldHTML);
-                    break;
-                }
-
-                case TIPO_CAMPO_QR: {
-                    const qrFieldHTML = `
-                        <div class="form-group">
-                            <label for="${field.id}">${field.name}</label>
-                            <img id="field_${field.id}" name="${field.id}" src="${field.src}" 
-                                class="img-fluid inputFieldAnnotation" data-tipo="${field.idField}" data-pagina="${field.page}" data-id="${field.id}" style="width: 150px; height: 150px; display: block; margin-bottom: 10px;">
-                            <input type="file" id="file_${field.id}" class="form-control-file" accept="image/*">
-                        </div>
-                    `;
-                    $contFields.append(qrFieldHTML);
-
-                    // Lógica para cambiar imagen y almacenar src en base64
-                    $(`#${field.id}-file`).on('change', function (event) {
-                        const file = event.target.files[0];
-
-                        if (file) {
-                            const reader = new FileReader();
-                            reader.onload = function (e) {
-                                const newSrc = e.target.result;
-                                $(`#${field.id}`).attr('src', newSrc);
-                                field.src = newSrc;
-                            };
-                            reader.readAsDataURL(file);
-                        }
-                    });
-                    break;
-                }
-
-                default:
-                    console.warn(`Tipo de campo no manejado: ${typeField}`);
-                    break;
-            }
-        });
-    });
-}
+//             let downloadLink = document.createElement('a');
+//             downloadLink.href = URL.createObjectURL(pdfBlob);
+//             downloadLink.download = 'archivo.pdf';
+//             document.body.appendChild(downloadLink);
+//             downloadLink.click();
+//             document.body.removeChild(downloadLink);
+//         },
+//         onError: function (xhr, status, error) {
+//             console.error('Error al guardar la plantilla:', status, error);
+//             alert('Ocurrió un error al guardar la plantilla.');
+//         }
+//     });
+// }

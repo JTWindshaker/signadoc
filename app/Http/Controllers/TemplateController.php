@@ -215,6 +215,8 @@ class TemplateController extends Controller
                 case TipoCampo::TIPO_CAMPO_QR:
                     $obj->propiedades->src = $image;
                     break;
+                case TipoCampo::TIPO_CAMPO_TEXT_AREA:
+                    break;
                 default:
                     break;
             }

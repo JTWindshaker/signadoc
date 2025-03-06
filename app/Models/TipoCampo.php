@@ -10,6 +10,7 @@ class TipoCampo extends Model
     const TIPO_CAMPO_TEXT = 1;
     const TIPO_CAMPO_SELECT = 2;
     const TIPO_CAMPO_QR = 3;
+    const TIPO_CAMPO_TEXT_AREA = 4;
 
     use HasFactory;
 

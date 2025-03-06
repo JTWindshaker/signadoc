@@ -1,15 +1,16 @@
 =========================================
-============= *Ready 04/03/2025* ============
+============= *Ready 06/03/2025* ============
 =========================================
 
 *Cambios:*
--- Desarrollo desde cero de la funcionalidad en base a lo entregado por el Ing Esteban (PRIMERA VERSIÓN)
+-- Se agrega un nuevo tipo de campo y se crea uno para probar (Descripción)
 
 *Notas/Observaciones:*
 -- 
 
 *SQL:*
-#Se cambian las propiedades de los campos
-update campo set propiedades='{"border":"none","color":"#000000","container":{"className":"draggable","tabIndex":0,"width":150,"height":30},"fontFamily":"Helvetica","fontSize":12,"fontStyle":"normal","fontWeight":"normal","height":"100%","id":1,"idField":1,"isEditable":true,"name":"Nombre Completo","pdfData":{"pdfFieldHeight":0,"pdfFieldWidth":0,"pdfPageHeight":0,"pdfPageWidth":0,"pdfX":0,"pdfY":0},"originalPdfData":{"pdfFieldHeight":0,"pdfFieldWidth":0,"pdfPageHeight":0,"pdfPageWidth":0,"pdfX":0,"pdfY":0},"outline":"none","text":"Nombre Completo","textAlign":"left","textDecoration":"auto","type":"text","width":"100%"}' where id=1;
-update campo set propiedades='{"id":2,"name":"Tipo de Cliente","text":"Tipo de Cliente","type":"select","color":"#000000","width":"calc(100% - 10px)","height":"100%","border":"none","outline":"none","idField":2,"pdfData":{"pdfX":0,"pdfY":0,"pdfPageWidth":0,"pdfFieldWidth":0,"pdfPageHeight":0,"pdfFieldHeight":0},"fontSize":12,"container":{"width":150,"height":30,"tabIndex":0,"className":"draggable"},"fontStyle":"normal","textAlign":"left","fontFamily":"Helvetica","fontWeight":"normal","isEditable":true,"textDecoration":"auto","value":"0","options":[{"id":0,"name":"-- Seleccione --"}],"originalPdfData":{"pdfX":0,"pdfY":0,"pdfPageWidth":0,"pdfFieldWidth":0,"pdfPageHeight":0,"pdfFieldHeight":0}}' where id=2;
-update campo set propiedades='{"id":3,"name":"qr","type":"image","src":"","width":"100%","height":"100%","idField":3,"image":"","isEditable":true,"opacity":1,"rotation":0,"pdfData":{"pdfX":0,"pdfY":0,"pdfPageWidth":0,"pdfFieldWidth":0,"pdfPageHeight":0,"pdfFieldHeight":0},"container":{"width":150,"height":150,"tabIndex":0,"className":"draggable"},"originalPdfData":{"pdfX":0,"pdfY":0,"pdfPageWidth":0,"pdfFieldWidth":0,"pdfPageHeight":0,"pdfFieldHeight":0}}' where id=3;
+#Se agrega un nuevo tipo de campo
+insert into tipo_campo(nombre, estado) values('textarea', true);
+
+#Se registra un campo llamado 'descripción' para probar el tipo de campo anterior
+insert into campo(tipo_campo_id, nombre, propiedades, estado) values(4, 'Descripcion', '{"border":"none","color":"#000000","container":{"className":"draggable","tabIndex":0,"width":150,"height":30},"fontFamily":"Helvetica","fontSize":12,"fontStyle":"normal","fontWeight":"normal","height":"100%","id":4,"idField":4,"isEditable":true,"name":"Descripción","pdfData":{"pdfFieldHeight":0,"pdfFieldWidth":0,"pdfPageHeight":0,"pdfPageWidth":0,"pdfX":0,"pdfY":0},"originalPdfData":{"pdfFieldHeight":0,"pdfFieldWidth":0,"pdfPageHeight":0,"pdfPageWidth":0,"pdfX":0,"pdfY":0},"outline":"none","text":"Descripción","textAlign":"left","textDecoration":"auto","type":"textarea","width":"100%"}', true);

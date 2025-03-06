@@ -56,7 +56,6 @@
         <span>Página: <span id="page-num"></span> / <span id="page-count"></span></span>
         <button id="zoom-in">Zoom In</button>
         <button id="zoom-out">Zoom Out</button>
-        <button id="fill-fields" onclick="openModalFillFields();">Llenar</button>
         <button id="guardar-campos" style="display:none;">Guardar</button>
     </div>
 
