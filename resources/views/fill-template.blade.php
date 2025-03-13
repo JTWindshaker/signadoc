@@ -50,7 +50,7 @@
     <h1>Visualizador y Llenado de PDF</h1>
 
     <!-- Controles para cargar y visualizar -->
-    <div>
+    <div style="height: 56px;">
         <button id="prev-page">Anterior</button>
         <button id="next-page">Siguiente</button>
         <span>Página: <span id="page-num"></span> / <span id="page-count"></span></span>

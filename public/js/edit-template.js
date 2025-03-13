@@ -4,6 +4,14 @@ const TIPO_CAMPO_SELECT = 2;
 const TIPO_CAMPO_QR = 3;
 const TIPO_CAMPO_TEXT_AREA = 4;
 
+//Zoom valido
+const VALID_ZOOM_MIN = 0.3;
+const VALID_ZOOM_MAX = 2;
+
+//Factor para calcular la altura de los input
+const FACTOR_HEIGHT_FONT_SIZE = 1;
+const FACTOR_HEIGHT_FONT_SIZE_SELECT = 1.2;
+
 let pdfDoc = null,
     pageNum = 1,
     pageIsRendering = false,
@@ -25,24 +33,28 @@ const nextPageBtn = document.getElementById('next-page');
 const zoomInBtn = document.getElementById('zoom-in');
 const zoomOutBtn = document.getElementById('zoom-out');
 const guardarCamposBtn = document.getElementById('guardar-campos');
-// const toggleViewCheckbox = document.getElementById('toggle-view-mode');
-
-// Panel de propiedades
-const fieldPropertiesPanel = document.getElementById('field-properties');
-const fontFamilySelect = document.getElementById('font-family');
-const fontSizeInput = document.getElementById('font-size');
-const fontBoldCheckbox = document.getElementById('font-bold');
-const fontItalicCheckbox = document.getElementById('font-italic');
-const fontColorInput = document.getElementById('font-color');
-const applyPropertiesBtn = document.getElementById('apply-properties');
 
 // Array para almacenar campos: cada objeto tendrá { container, fieldElement, pdfData, originalPdfData, page, type, properties }
 let draggableFields = [];
 let activeFieldObj = null;
 
-// --- Renderizado en modo UNA PÁGINA ---
+const idTemplate = $('#idTemplate').val();
+$(document).ready(function () {
+    // Eventos Propiedades
+    $('#apply-properties').on('click', applyProperties);
+
+    $("#image-opacity").on("input", function () {
+        $("#image-opacity-value").text($(this).val());
+    });
+
+
+    loadFields();
+    loadTemplate(idTemplate);
+});
+
 const renderSinglePage = async (num, annotations, isDB = false) => {
     if (!pdfDoc) return;
+
     pageIsRendering = true;
     pdfDoc.getPage(num).then(async page => {
         const viewport = page.getViewport({ scale });
@@ -177,37 +189,6 @@ const renderAllPages = () => {
     }
 };
 
-// toggleViewCheckbox.addEventListener('change', () => {
-//     viewAll = toggleViewCheckbox.checked;
-
-//     if (viewAll) {
-//         mostrarControlesEdicion(false);
-//         renderAllPages();
-//     } else {
-//         container.innerHTML = "";
-//         container.appendChild(singleCanvas);
-
-//         draggableFields.forEach(fieldObj => {
-//             const pdfPageHeight = singleCanvas.height / scale;
-//             fieldObj.container.style.position = "absolute";
-//             fieldObj.container.style.display = "block";
-//             fieldObj.container.style.left = (fieldObj.originalPdfData.pdfX * scale) + "px";
-//             fieldObj.container.style.top = ((pdfPageHeight - fieldObj.originalPdfData.pdfY - fieldObj.originalPdfData.pdfFieldHeight) * scale) + "px";
-//             fieldObj.container.style.width = (fieldObj.originalPdfData.pdfFieldWidth * scale) + "px";
-//             fieldObj.container.style.height = (fieldObj.originalPdfData.pdfFieldHeight * scale) + "px";
-
-//             if (fieldObj.type === "text" || fieldObj.type === "dropdown") {
-//                 fieldObj.fieldElement.style.fontSize = (fieldObj.properties.fontSize * scale) + "px";
-//             }
-
-//             container.appendChild(fieldObj.container);
-//         });
-
-//         mostrarControlesEdicion(true);
-//         renderSinglePage(num = pageNum, isDB = false);
-//     }
-// });
-
 document.addEventListener('click', () => {
     draggableFields.forEach(fieldObj => {
         const btnCont = fieldObj.container.querySelector('.field-buttons');
@@ -216,12 +197,6 @@ document.addEventListener('click', () => {
             btnCont.style.display = "none";
         }
     });
-});
-
-const idTemplate = $('#idTemplate').val();
-$(document).ready(function () {
-    loadFields();
-    loadTemplate(idTemplate);
 });
 
 function loadFields() {
@@ -252,7 +227,11 @@ function loadFields() {
                                 const buttonDelete = document.createElement("button");
                                 const objContainer = propiedades.container;
                                 const defaultWidth = (objContainer.width) * scale;
-                                const defaultHeight = (objContainer.height) * scale;
+
+                                const computedFontSize = propiedades.fontSize * scale;
+                                const lineHeight = computedFontSize * FACTOR_HEIGHT_FONT_SIZE;
+                                const defaultHeight = lineHeight;
+
                                 const initialLeft = ((singleCanvas.width - defaultWidth) * scale) / 2;
                                 const initialTop = ((singleCanvas.height - defaultHeight) * scale) / 2;
 
@@ -308,7 +287,7 @@ function loadFields() {
 
                                 container.appendChild(containerDiv);
                                 makeDraggable(containerDiv);
-                                makeResizable(containerDiv, resizeHandle);
+                                makeResizableOnlyX(containerDiv, resizeHandle);
 
                                 // Al crear el campo se calcula la posición base en coordenadas PDF y se guarda en originalPdfData
                                 propiedades.pdfData.pdfX = initialLeft / scale;
@@ -406,7 +385,11 @@ function loadFields() {
                                 const buttonDelete = document.createElement("button");
                                 const objContainer = propiedades.container;
                                 const defaultWidth = (objContainer.width) * scale;
-                                const defaultHeight = (objContainer.height) * scale;
+
+                                const computedFontSize = propiedades.fontSize * scale;
+                                const lineHeight = computedFontSize * FACTOR_HEIGHT_FONT_SIZE_SELECT;
+                                const defaultHeight = lineHeight;
+
                                 const initialLeft = ((singleCanvas.width - defaultWidth) * scale) / 2;
                                 const initialTop = ((singleCanvas.height - defaultHeight) * scale) / 2;
 
@@ -465,7 +448,7 @@ function loadFields() {
 
                                 container.appendChild(containerDiv);
                                 makeDraggable(containerDiv);
-                                makeResizable(containerDiv, resizeHandle);
+                                makeResizableOnlyX(containerDiv, resizeHandle);
 
                                 // Al crear el campo se calcula la posición base en coordenadas PDF y se guarda en originalPdfData
                                 propiedades.pdfData.pdfX = initialLeft / scale;
@@ -506,19 +489,31 @@ function loadFields() {
                                 draggableFields.push(fieldObj);
                                 guardarCamposBtn.style.display = "inline-block";
 
+                                containerDiv.addEventListener("click", (e) => {
+                                    e.stopPropagation();
+                                    hideAllButtonContainersExcept(containerDiv);
+
+                                    const buttonContainer = containerDiv.querySelector('.field-buttons');
+                                    if (buttonContainer) {
+                                        buttonContainer.style.display = "block";
+                                    }
+
+                                    activeFieldObj = fieldObj;
+                                });
+
                                 containerDiv.addEventListener("focus", () => {
-                                    buttonContainer.style.display = "block";
+                                    hideAllButtonContainersExcept(containerDiv);
+
+                                    const buttonContainer = containerDiv.querySelector('.field-buttons');
+                                    if (buttonContainer) {
+                                        buttonContainer.style.display = "block";
+                                    }
+
                                     activeFieldObj = fieldObj;
                                 });
 
                                 containerDiv.addEventListener("blur", () => {
                                     buttonContainer.style.display = "none";
-                                });
-
-                                containerDiv.addEventListener("click", (e) => {
-                                    e.stopPropagation();
-                                    buttonContainer.style.display = "block";
-                                    activeFieldObj = fieldObj;
                                 });
 
                                 buttonDelete.addEventListener("click", (e) => {
@@ -534,7 +529,7 @@ function loadFields() {
                                 buttonSettings.addEventListener("click", (e) => {
                                     e.stopPropagation();
                                     activeFieldObj = fieldObj;
-                                    openSelectPropertiesPanel(fieldObj);
+                                    showPropertiesPanel(fieldObj);
                                 });
                                 break;
                             }
@@ -624,19 +619,31 @@ function loadFields() {
                                 draggableFields.push(fieldObj);
                                 guardarCamposBtn.style.display = "inline-block";
 
+                                containerDiv.addEventListener("click", (e) => {
+                                    e.stopPropagation();
+                                    hideAllButtonContainersExcept(containerDiv);
+
+                                    const buttonContainer = containerDiv.querySelector('.field-buttons');
+                                    if (buttonContainer) {
+                                        buttonContainer.style.display = "block";
+                                    }
+
+                                    activeFieldObj = fieldObj;
+                                });
+
                                 containerDiv.addEventListener("focus", () => {
-                                    buttonContainer.style.display = "block";
+                                    hideAllButtonContainersExcept(containerDiv);
+
+                                    const buttonContainer = containerDiv.querySelector('.field-buttons');
+                                    if (buttonContainer) {
+                                        buttonContainer.style.display = "block";
+                                    }
+
                                     activeFieldObj = fieldObj;
                                 });
 
                                 containerDiv.addEventListener("blur", () => {
                                     buttonContainer.style.display = "none";
-                                });
-
-                                containerDiv.addEventListener("click", (e) => {
-                                    e.stopPropagation();
-                                    buttonContainer.style.display = "block";
-                                    activeFieldObj = fieldObj;
                                 });
 
                                 buttonDelete.addEventListener("click", (e) => {
@@ -652,7 +659,7 @@ function loadFields() {
                                 buttonSettings.addEventListener("click", (e) => {
                                     e.stopPropagation();
                                     activeFieldObj = fieldObj;
-                                    openImagePropertiesPanel(fieldObj);
+                                    showPropertiesPanel(fieldObj);
                                 });
                                 break;
                             }
@@ -686,7 +693,6 @@ function loadFields() {
                                 containerDiv.dataset.originWidth = defaultWidth / scale;
                                 containerDiv.dataset.originHeight = defaultHeight / scale;
 
-                                // inputField.type = "text";
                                 inputField.dataset.type = "textarea";
                                 inputField.value = propiedades.text;
                                 inputField.style.background = "transparent";
@@ -861,7 +867,7 @@ async function loadPDF(pdfUrl, annotations) {
             pdfDoc = pdfDoc_;
             pageCountSpan.textContent = pdfDoc.numPages;
             viewAll = false;
-            // toggleViewCheckbox.checked = false;
+
             mostrarControlesEdicion(true);
             await renderSinglePage(pageNum, annotations, true);
         }).catch(err => {
@@ -874,7 +880,6 @@ async function loadPDF(pdfUrl, annotations) {
 
 const loadFieldsIntoTemplate = async (fields, isDB) => {
     $("#pdf-container div.draggable").remove();
-
     if (!fields) return;
 
     if (isDB) {
@@ -899,7 +904,11 @@ const loadFieldsIntoTemplate = async (fields, isDB) => {
                     const buttonDelete = document.createElement("button");
                     const objContainer = properties.container;
                     const defaultWidth = objContainer.width * scale;
-                    const defaultHeight = objContainer.height * scale;
+
+                    const computedFontSize = propiedades.fontSize * scale;
+                    const lineHeight = computedFontSize * FACTOR_HEIGHT_FONT_SIZE;
+                    const defaultHeight = lineHeight;
+
                     const initialLeft = objContainer.left * scale;
                     const initialTop = objContainer.top * scale;
 
@@ -955,7 +964,7 @@ const loadFieldsIntoTemplate = async (fields, isDB) => {
 
                     container.appendChild(containerDiv);
                     makeDraggable(containerDiv);
-                    makeResizable(containerDiv, resizeHandle);
+                    makeResizableOnlyX(containerDiv, resizeHandle);
 
                     // Al crear el campo se calcula la posición base en coordenadas PDF y se guarda en originalPdfData
                     properties.pdfData.pdfX = initialLeft / scale;
@@ -1053,7 +1062,11 @@ const loadFieldsIntoTemplate = async (fields, isDB) => {
                     const buttonDelete = document.createElement("button");
                     const objContainer = properties.container;
                     const defaultWidth = objContainer.width * scale;
-                    const defaultHeight = objContainer.height * scale;
+
+                    const computedFontSize = propiedades.fontSize * scale;
+                    const lineHeight = computedFontSize * FACTOR_HEIGHT_FONT_SIZE_SELECT;
+                    const defaultHeight = lineHeight;
+
                     const initialLeft = objContainer.left * scale;
                     const initialTop = objContainer.top * scale;
 
@@ -1112,7 +1125,7 @@ const loadFieldsIntoTemplate = async (fields, isDB) => {
 
                     container.appendChild(containerDiv);
                     makeDraggable(containerDiv);
-                    makeResizable(containerDiv, resizeHandle);
+                    makeResizableOnlyX(containerDiv, resizeHandle);
 
                     // Al crear el campo se calcula la posición base en coordenadas PDF y se guarda en originalPdfData
                     properties.pdfData.pdfX = initialLeft / scale;
@@ -1153,19 +1166,31 @@ const loadFieldsIntoTemplate = async (fields, isDB) => {
                     draggableFields.push(fieldObj);
                     guardarCamposBtn.style.display = "inline-block";
 
+                    containerDiv.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        hideAllButtonContainersExcept(containerDiv);
+
+                        const buttonContainer = containerDiv.querySelector('.field-buttons');
+                        if (buttonContainer) {
+                            buttonContainer.style.display = "block";
+                        }
+
+                        activeFieldObj = fieldObj;
+                    });
+
                     containerDiv.addEventListener("focus", () => {
-                        buttonContainer.style.display = "block";
+                        hideAllButtonContainersExcept(containerDiv);
+
+                        const buttonContainer = containerDiv.querySelector('.field-buttons');
+                        if (buttonContainer) {
+                            buttonContainer.style.display = "block";
+                        }
+
                         activeFieldObj = fieldObj;
                     });
 
                     containerDiv.addEventListener("blur", () => {
                         buttonContainer.style.display = "none";
-                    });
-
-                    containerDiv.addEventListener("click", (e) => {
-                        e.stopPropagation();
-                        buttonContainer.style.display = "block";
-                        activeFieldObj = fieldObj;
                     });
 
                     buttonDelete.addEventListener("click", (e) => {
@@ -1181,7 +1206,7 @@ const loadFieldsIntoTemplate = async (fields, isDB) => {
                     buttonSettings.addEventListener("click", (e) => {
                         e.stopPropagation();
                         activeFieldObj = fieldObj;
-                        openSelectPropertiesPanel(fieldObj);
+                        showPropertiesPanel(fieldObj);
                     });
                     break;
                 }
@@ -1271,19 +1296,31 @@ const loadFieldsIntoTemplate = async (fields, isDB) => {
                     draggableFields.push(fieldObj);
                     guardarCamposBtn.style.display = "inline-block";
 
+                    containerDiv.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        hideAllButtonContainersExcept(containerDiv);
+
+                        const buttonContainer = containerDiv.querySelector('.field-buttons');
+                        if (buttonContainer) {
+                            buttonContainer.style.display = "block";
+                        }
+
+                        activeFieldObj = fieldObj;
+                    });
+
                     containerDiv.addEventListener("focus", () => {
-                        buttonContainer.style.display = "block";
+                        hideAllButtonContainersExcept(containerDiv);
+
+                        const buttonContainer = containerDiv.querySelector('.field-buttons');
+                        if (buttonContainer) {
+                            buttonContainer.style.display = "block";
+                        }
+
                         activeFieldObj = fieldObj;
                     });
 
                     containerDiv.addEventListener("blur", () => {
                         buttonContainer.style.display = "none";
-                    });
-
-                    containerDiv.addEventListener("click", (e) => {
-                        e.stopPropagation();
-                        buttonContainer.style.display = "block";
-                        activeFieldObj = fieldObj;
                     });
 
                     buttonDelete.addEventListener("click", (e) => {
@@ -1299,7 +1336,7 @@ const loadFieldsIntoTemplate = async (fields, isDB) => {
                     buttonSettings.addEventListener("click", (e) => {
                         e.stopPropagation();
                         activeFieldObj = fieldObj;
-                        openImagePropertiesPanel(fieldObj);
+                        showPropertiesPanel(fieldObj);
                     });
                     break;
                 }
@@ -1333,7 +1370,6 @@ const loadFieldsIntoTemplate = async (fields, isDB) => {
                     containerDiv.dataset.originWidth = defaultWidth / scale;
                     containerDiv.dataset.originHeight = defaultHeight / scale;
 
-                    // inputField.type = "text";
                     inputField.dataset.type = "textarea";
                     inputField.value = propiedades.text;
                     inputField.style.background = "transparent";
@@ -1510,7 +1546,7 @@ const loadFieldsIntoTemplate = async (fields, isDB) => {
 
                     container.appendChild(containerDiv);
                     makeDraggable(containerDiv);
-                    makeResizable(containerDiv, resizeHandle);
+                    makeResizableOnlyX(containerDiv, resizeHandle);
 
                     // Al crear el campo se calcula la posición base en coordenadas PDF y se guarda en originalPdfData
                     field.pdfData.pdfX = initialLeft / scale;
@@ -1675,19 +1711,31 @@ const loadFieldsIntoTemplate = async (fields, isDB) => {
                     draggableFields.push(fieldObj);
                     guardarCamposBtn.style.display = "inline-block";
 
+                    containerDiv.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        hideAllButtonContainersExcept(containerDiv);
+
+                        const buttonContainer = containerDiv.querySelector('.field-buttons');
+                        if (buttonContainer) {
+                            buttonContainer.style.display = "block";
+                        }
+
+                        activeFieldObj = fieldObj;
+                    });
+
                     containerDiv.addEventListener("focus", () => {
-                        buttonContainer.style.display = "block";
+                        hideAllButtonContainersExcept(containerDiv);
+
+                        const buttonContainer = containerDiv.querySelector('.field-buttons');
+                        if (buttonContainer) {
+                            buttonContainer.style.display = "block";
+                        }
+
                         activeFieldObj = fieldObj;
                     });
 
                     containerDiv.addEventListener("blur", () => {
                         buttonContainer.style.display = "none";
-                    });
-
-                    containerDiv.addEventListener("click", (e) => {
-                        e.stopPropagation();
-                        buttonContainer.style.display = "block";
-                        activeFieldObj = fieldObj;
                     });
 
                     buttonDelete.addEventListener("click", (e) => {
@@ -1703,7 +1751,7 @@ const loadFieldsIntoTemplate = async (fields, isDB) => {
                     buttonSettings.addEventListener("click", (e) => {
                         e.stopPropagation();
                         activeFieldObj = fieldObj;
-                        openSelectPropertiesPanel(fieldObj);
+                        showPropertiesPanel(fieldObj);
                     });
                     break;
                 }
@@ -1779,19 +1827,31 @@ const loadFieldsIntoTemplate = async (fields, isDB) => {
                     draggableFields.push(fieldObj);
                     guardarCamposBtn.style.display = "inline-block";
 
+                    containerDiv.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        hideAllButtonContainersExcept(containerDiv);
+
+                        const buttonContainer = containerDiv.querySelector('.field-buttons');
+                        if (buttonContainer) {
+                            buttonContainer.style.display = "block";
+                        }
+
+                        activeFieldObj = fieldObj;
+                    });
+
                     containerDiv.addEventListener("focus", () => {
-                        buttonContainer.style.display = "block";
+                        hideAllButtonContainersExcept(containerDiv);
+
+                        const buttonContainer = containerDiv.querySelector('.field-buttons');
+                        if (buttonContainer) {
+                            buttonContainer.style.display = "block";
+                        }
+
                         activeFieldObj = fieldObj;
                     });
 
                     containerDiv.addEventListener("blur", () => {
                         buttonContainer.style.display = "none";
-                    });
-
-                    containerDiv.addEventListener("click", (e) => {
-                        e.stopPropagation();
-                        buttonContainer.style.display = "block";
-                        activeFieldObj = fieldObj;
                     });
 
                     buttonDelete.addEventListener("click", (e) => {
@@ -1807,7 +1867,7 @@ const loadFieldsIntoTemplate = async (fields, isDB) => {
                     buttonSettings.addEventListener("click", (e) => {
                         e.stopPropagation();
                         activeFieldObj = fieldObj;
-                        openImagePropertiesPanel(fieldObj);
+                        showPropertiesPanel(fieldObj);
                     });
                     break;
                 }
@@ -1958,7 +2018,7 @@ nextPageBtn.addEventListener('click', () => {
 });
 
 zoomInBtn.addEventListener('click', () => {
-    if (!pdfDoc || scale >= 1) return;
+    if (!pdfDoc || scale >= VALID_ZOOM_MAX) return;
     scale += 0.1;
     scale = parseFloat(scale.toFixed(1));
 
@@ -1966,7 +2026,7 @@ zoomInBtn.addEventListener('click', () => {
 });
 
 zoomOutBtn.addEventListener('click', () => {
-    if (!pdfDoc || scale <= 0.3) return;
+    if (!pdfDoc || scale <= VALID_ZOOM_MIN) return;
     scale -= 0.1;
     scale = parseFloat(scale.toFixed(1));
 
@@ -2075,6 +2135,7 @@ function makeDraggable(el) {
             el.dataset.originTop = newTop / scale;
         }
     }
+
     function mouseUpHandler(e) {
         window.removeEventListener('mousemove', mouseMoveHandler);
         window.removeEventListener('mouseup', mouseUpHandler);
@@ -2083,11 +2144,13 @@ function makeDraggable(el) {
             updateFieldPDFDataForElement(el);
         }
     }
+
     el.addEventListener('mousedown', mouseDownHandler);
 }
 
 function makeResizable(containerEl, handle) {
     let startX, startY, startWidth, startHeight;
+
     handle.addEventListener('mousedown', function (e) {
         e.stopPropagation();
         startX = e.clientX;
@@ -2115,88 +2178,28 @@ function makeResizable(containerEl, handle) {
     }
 }
 
-function openSelectPropertiesPanel(fieldObj) {
-    document.getElementById("add-option").removeEventListener("click", addOptionSelect);
-    document.getElementById("field-properties").style.display = "none";
-    document.getElementById("image-field-properties").style.display = "none";
+function makeResizableOnlyX(containerEl, handle) {
+    let startX, startWidth;
 
-    const panel = document.getElementById("select-field-properties");
-    panel.style.display = "block";
-
-    document.getElementById("select-font-family").value = fieldObj.properties.fontFamily;
-    document.getElementById("select-font-size").value = fieldObj.properties.fontSize;
-    document.getElementById("select-font-bold").checked = (fieldObj.properties.fontWeight == "bold" ? true : false);
-    document.getElementById("select-font-italic").checked = (fieldObj.properties.fontStyle == "italic" ? true : false);
-    document.getElementById("select-font-color").value = fieldObj.properties.color;
-
-    const optionsContainer = document.getElementById("select-options-container");
-    optionsContainer.innerHTML = "";
-
-    fieldObj.properties.options.forEach((opt, index) => {
-        const optionDiv = document.createElement("div");
-        optionDiv.style.marginBottom = "5px";
-        const inputOpt = document.createElement("input");
-        inputOpt.type = "text";
-        inputOpt.value = opt.name;
-        inputOpt.dataset.value = opt.id;
-
-        inputOpt.style.width = "70%";
-        inputOpt.dataset.index = index;
-        const removeBtn = document.createElement("button");
-        removeBtn.innerHTML = "🗑️";
-        removeBtn.style.marginLeft = "5px";
-
-        removeBtn.addEventListener("click", () => {
-            fieldObj.properties.options.splice(index, 1);
-            optionDiv.remove();
-        });
-
-        optionDiv.appendChild(inputOpt);
-        optionDiv.appendChild(removeBtn);
-        optionsContainer.appendChild(optionDiv);
+    handle.addEventListener('mousedown', function (e) {
+        e.stopPropagation();
+        startX = e.clientX;
+        startWidth = containerEl.offsetWidth;
+        window.addEventListener('mousemove', resizeMouseMove);
+        window.addEventListener('mouseup', resizeMouseUp);
     });
 
-    document.getElementById("add-option").addEventListener("click", addOptionSelect);
+    function resizeMouseMove(e) {
+        let newWidth = startWidth + (e.clientX - startX);
+        containerEl.style.width = newWidth + "px";
+        containerEl.dataset.originWidth = newWidth / scale;
+    }
 
-    document.getElementById("apply-select-properties").addEventListener("click", () => {
-        if (!activeFieldObj || activeFieldObj.type !== "dropdown") return;
-
-        activeFieldObj.properties.fontFamily = document.getElementById("select-font-family").value;
-        activeFieldObj.properties.fontSize = parseInt(document.getElementById("select-font-size").value);
-        activeFieldObj.properties.fontWeight = (document.getElementById("select-font-bold").checked ? "bold" : "normal");
-        activeFieldObj.properties.fontStyle = (document.getElementById("select-font-italic").checked ? "italic" : "normal");
-        activeFieldObj.properties.color = document.getElementById("select-font-color").value;
-
-        const optionsContainer = document.getElementById("select-options-container");
-        const newOptions = [];
-
-        optionsContainer.querySelectorAll("input[type='text']").forEach((input, index) => {
-            const option = {
-                id: index,
-                name: input.value
-            };
-
-            newOptions.push(option);
-        });
-
-        activeFieldObj.properties.options = newOptions;
-
-        activeFieldObj.fieldElement.innerHTML = "";
-        newOptions.forEach(opt => {
-            const optionEl = document.createElement("option");
-            optionEl.value = opt.id;
-            optionEl.textContent = opt.name;
-            activeFieldObj.fieldElement.appendChild(optionEl);
-        });
-
-        activeFieldObj.fieldElement.style.fontFamily = activeFieldObj.properties.fontFamily;
-        activeFieldObj.fieldElement.style.fontSize = (activeFieldObj.properties.fontSize * scale) + "px";
-        activeFieldObj.fieldElement.style.fontWeight = activeFieldObj.properties.fontWeight;
-        activeFieldObj.fieldElement.style.fontStyle = activeFieldObj.properties.fontStyle;
-        activeFieldObj.fieldElement.style.color = activeFieldObj.properties.color;
-
-        document.getElementById("select-field-properties").style.display = "none";
-    });
+    function resizeMouseUp(e) {
+        window.removeEventListener('mousemove', resizeMouseMove);
+        window.removeEventListener('mouseup', resizeMouseUp);
+        updateFieldPDFDataForElement(containerEl);
+    }
 }
 
 function addOptionSelect() {
@@ -2235,62 +2238,202 @@ function hideAllButtonContainersExcept(activeContainer) {
 }
 
 function showPropertiesPanel(fieldObj) {
-    document.getElementById("select-field-properties").style.display = "none";
-    document.getElementById("image-field-properties").style.display = "none";
-    if (fieldObj.type !== "text") {
-        fieldPropertiesPanel.style.display = "none";
+    if (fieldObj.properties == undefined) {
         return;
     }
 
-    fieldPropertiesPanel.style.display = "block";
-    const props = fieldObj.properties || {
-        text: fieldObj.name,
-        width: "100%",
-        height: "100%",
-        border: "none",
-        outline: "none",
-        textAlign: "left",
-        color: "#000000",
-        fontFamily: "Helvetica",
-        fontSize: 12,
-        fontWeight: "normal",
-        fontStyle: "normal",
-        textDecoration: "auto",
-    };
+    const props = fieldObj.properties;
+    $("#field-properties").removeClass("hidden");
+    $("div.contProp").addClass("hidden");
 
-    fontFamilySelect.value = props.fontFamily;
-    fontSizeInput.value = props.fontSize;
-    fontBoldCheckbox.checked = (props.fontWeight == "bold" ? true : false);
-    fontItalicCheckbox.checked = (props.fontStyle == "italic" ? true : false);
-    fontColorInput.value = props.color;
+    switch (parseInt(fieldObj.idField)) {
+        case TIPO_CAMPO_TEXT:
+            $("div.propText").removeClass("hidden");
+
+            $("#font-family").val(props.fontFamily);
+            $("#font-size").val(props.fontSize);
+            $("#font-bold").prop("checked", (props.fontWeight == "bold" ? true : false));
+            $("#font-italic").prop("checked", (props.fontStyle == "italic" ? true : false));
+            $("#font-color").val(props.color);
+            break;
+        case TIPO_CAMPO_SELECT:
+            $("div.propDropdown").removeClass("hidden");
+            $("#add-option").off("click", addOptionSelect);
+
+            $("#font-family").val(props.fontFamily);
+            $("#font-size").val(props.fontSize);
+            $("#font-bold").prop("checked", (props.fontWeight == "bold" ? true : false));
+            $("#font-italic").prop("checked", (props.fontStyle == "italic" ? true : false));
+            $("#font-color").val(props.color);
+
+            $("#select-options-container").empty();
+
+            props.options.forEach((opt, index) => {
+                const $optionDiv = $("<div>").css("margin-bottom", "5px");
+
+                const $inputOpt = $("<input>", {
+                    type: "text",
+                    value: opt.name,
+                    "data-value": opt.id,
+                    "data-index": index,
+                    css: { width: "70%" }
+                });
+
+                const $removeBtn = $("<button>", {
+                    html: "🗑️",
+                    css: { "margin-left": "5px" },
+                    click: function () {
+                        fieldObj.properties.options.splice(index, 1);
+                        $optionDiv.remove();
+                    }
+                });
+
+                $optionDiv.append($inputOpt, $removeBtn);
+                $("#select-options-container").append($optionDiv);
+            });
+
+            $("#add-option").on("click", addOptionSelect);
+            break;
+        case TIPO_CAMPO_QR:
+            $("div.propQR").removeClass("hidden");
+
+            const $opacityInput = $("#image-opacity");
+            $opacityInput.val(fieldObj.properties.opacity);
+            $("#image-opacity-value").text(fieldObj.properties.opacity);
+            break;
+        case TIPO_CAMPO_TEXT_AREA:
+            $("div.propTextarea").removeClass("hidden");
+
+            $("#font-family").val(props.fontFamily);
+            $("#font-size").val(props.fontSize);
+            $("#font-bold").prop("checked", (props.fontWeight == "bold" ? true : false));
+            $("#font-italic").prop("checked", (props.fontStyle == "italic" ? true : false));
+            $("#font-color").val(props.color);
+            break;
+        default:
+            break;
+    }
 }
 
-applyPropertiesBtn.addEventListener('click', () => {
-    if (!activeFieldObj || activeFieldObj.type !== "text") return;
+function applyProperties() {
+    if (!activeFieldObj) return;
 
-    const newProps = {
-        text: activeFieldObj.name,
-        width: "100%",
-        height: "100%",
-        border: "none",
-        outline: "none",
-        textAlign: "left",
-        color: fontColorInput.value,
-        fontFamily: fontFamilySelect.value,
-        fontSize: parseInt(fontSizeInput.value),
-        fontWeight: (fontBoldCheckbox.checked ? "bold" : "normal"),
-        fontStyle: (fontItalicCheckbox.checked ? "italic" : "normal"),
-        textDecoration: "auto",
-    };
+    const idField = parseInt(activeFieldObj.idField);
 
-    activeFieldObj.properties = newProps;
-    activeFieldObj.fieldElement.style.fontFamily = newProps.fontFamily;
-    activeFieldObj.fieldElement.style.fontSize = (newProps.fontSize * scale) + "px";
-    activeFieldObj.fieldElement.style.fontWeight = newProps.fontWeight;
-    activeFieldObj.fieldElement.style.fontStyle = newProps.fontStyle;
-    activeFieldObj.fieldElement.style.color = newProps.color;
-    fieldPropertiesPanel.style.display = "none";
-});
+    switch (idField) {
+        case TIPO_CAMPO_TEXT:
+            var fontColor = $("#font-color").val();
+            var fontFamily = $("#font-family").val();
+            var fontSize = parseInt($("#font-size").val());
+            var fontStyle = $("#font-italic").prop("checked") ? "italic" : "normal";
+            var fontWeight = $("#font-bold").prop("checked") ? "bold" : "normal";
+
+            var computedFontSize = fontSize * scale;
+            var lineHeight = computedFontSize * FACTOR_HEIGHT_FONT_SIZE;
+            var defaultHeight = lineHeight;
+
+            activeFieldObj.container.style.height = defaultHeight + "px";
+            activeFieldObj.container.dataset.originHeight = defaultHeight / scale;
+
+            Object.assign(activeFieldObj.properties, {
+                color: fontColor,
+                fontFamily,
+                fontSize,
+                fontStyle,
+                fontWeight
+            });
+
+            Object.assign(activeFieldObj.fieldElement.style, {
+                color: fontColor,
+                fontFamily,
+                fontSize: `${fontSize * scale}px`,
+                fontStyle,
+                fontWeight
+            });
+
+            break;
+        case TIPO_CAMPO_SELECT:
+            var fontColor = $("#font-color").val();
+            var fontFamily = $("#font-family").val();
+            var fontSize = parseInt($("#font-size").val());
+            var fontStyle = $("#font-italic").prop("checked") ? "italic" : "normal";
+            var fontWeight = $("#font-bold").prop("checked") ? "bold" : "normal";
+
+            var computedFontSize = fontSize * scale;
+            var lineHeight = computedFontSize * FACTOR_HEIGHT_FONT_SIZE_SELECT;
+            var defaultHeight = lineHeight;
+
+            activeFieldObj.container.style.height = defaultHeight + "px";
+            activeFieldObj.container.dataset.originHeight = defaultHeight / scale;
+
+            const newOptions = [];
+            $("#select-options-container input[type='text']").each((index, input) => {
+                newOptions.push({
+                    id: index,
+                    name: $(input).val()
+                });
+            });
+
+            Object.assign(activeFieldObj.properties, {
+                color: fontColor,
+                fontFamily,
+                fontSize,
+                fontStyle,
+                fontWeight,
+                options: newOptions
+            });
+
+            $(activeFieldObj.fieldElement).empty();
+            newOptions.forEach(opt => {
+                $("<option>", {
+                    value: opt.id,
+                    text: opt.name
+                }).appendTo(activeFieldObj.fieldElement);
+            });
+
+            Object.assign(activeFieldObj.fieldElement.style, {
+                color: fontColor,
+                fontFamily,
+                fontSize: `${fontSize * scale}px`,
+                fontStyle,
+                fontWeight
+            });
+            break;
+        case TIPO_CAMPO_QR:
+            const opacityValue = parseFloat($("#image-opacity").val());
+            activeFieldObj.properties.opacity = opacityValue;
+            activeFieldObj.fieldElement.style.opacity = opacityValue;
+            break;
+        case TIPO_CAMPO_TEXT_AREA:
+            var fontColor = $("#font-color").val();
+            var fontFamily = $("#font-family").val();
+            var fontSize = parseInt($("#font-size").val());
+            var fontStyle = $("#font-italic").prop("checked") ? "italic" : "normal";
+            var fontWeight = $("#font-bold").prop("checked") ? "bold" : "normal";
+
+            Object.assign(activeFieldObj.properties, {
+                color: fontColor,
+                fontFamily,
+                fontSize,
+                fontStyle,
+                fontWeight
+            });
+
+            Object.assign(activeFieldObj.fieldElement.style, {
+                color: fontColor,
+                fontFamily,
+                fontSize: `${fontSize * scale}px`,
+                fontStyle,
+                fontWeight
+            });
+            break;
+        default:
+            console.warn("Tipo de campo no reconocido:", idField);
+            break;
+    }
+
+    $("#field-properties").addClass("hidden");
+}
 
 guardarCamposBtn.addEventListener('click', async () => {
     if (draggableFields.length === 0) return;
@@ -2336,25 +2479,6 @@ guardarCamposBtn.addEventListener('click', async () => {
     });
 });
 
-// toggleViewCheckbox.addEventListener('change', () => {
-//     viewAll = toggleViewCheckbox.checked;
-
-//     if (viewAll) {
-//         mostrarControlesEdicion(false);
-//         renderAllPages();
-//     } else {
-//         container.innerHTML = "";
-//         container.appendChild(singleCanvas);
-
-//         draggableFields.forEach(fieldObj => {
-//             container.appendChild(fieldObj.container);
-//         });
-
-//         mostrarControlesEdicion(true);
-//         renderSinglePage(num = pageNum, isDB = false);
-//     }
-// });
-
 function mostrarControlesEdicion(mostrar) {
     const displayValue = mostrar ? "inline-block" : "none";
     prevPageBtn.style.display = displayValue;
@@ -2364,40 +2488,3 @@ function mostrarControlesEdicion(mostrar) {
     guardarCamposBtn.style.display = mostrar && draggableFields.length > 0 ? "inline-block" : "none";
     pageNumSpan.parentNode.style.display = displayValue;
 }
-
-function openImagePropertiesPanel(fieldObj) {
-    document.getElementById("field-properties").style.display = "none";
-    document.getElementById("select-field-properties").style.display = "none";
-    const panel = document.getElementById("image-field-properties");
-    panel.style.display = "block";
-
-    const opacityInput = document.getElementById("image-opacity");
-    opacityInput.value = fieldObj.properties.opacity;
-    document.getElementById("image-opacity-value").textContent = fieldObj.properties.opacity;
-    document.getElementById("image-file").value = "";
-}
-
-document.getElementById("apply-image-properties").addEventListener("click", () => {
-    if (!activeFieldObj || activeFieldObj.type !== "image") return;
-
-    const opacityValue = document.getElementById("image-opacity").value;
-    activeFieldObj.properties.opacity = parseFloat(opacityValue);
-    activeFieldObj.fieldElement.style.opacity = opacityValue;
-
-    const fileInput = document.getElementById("image-file");
-    if (fileInput.files && fileInput.files[0]) {
-        const file = fileInput.files[0];
-        const reader = new FileReader();
-        reader.onload = function (ev) {
-            activeFieldObj.fieldElement.src = ev.target.result;
-            activeFieldObj.properties.src = ev.target.result;
-            activeFieldObj.fieldElement.style.pointerEvents = "none";
-            updateFieldPDFData(activeFieldObj);
-            document.getElementById("image-field-properties").style.display = "none";
-        };
-        reader.readAsDataURL(file);
-    } else {
-        updateFieldPDFData(activeFieldObj);
-        document.getElementById("image-field-properties").style.display = "none";
-    }
-});

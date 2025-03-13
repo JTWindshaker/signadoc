@@ -1,9 +1,9 @@
 =========================================
-============= *Ready 06/03/2025* ============
+============= *Ready 13/03/2025* ============
 =========================================
 
 *Cambios:*
--- Se valida la excepción cuando el pdf enviado para firmar se encuentra protegido
+-- Ajustes dados en el archivo PRUEBAS SIGNADOC.docx (El archivo original se partió en dos paquetes de ajustes. Se sacan los nuevos campos para otro despliegue).
 
 *Notas/Observaciones:*
 -- 

@@ -44,7 +44,7 @@ label {
 
 /* Panel de propiedades para campos de texto */
 #field-properties {
-    display: none;
+    /* display: none; */
     margin-top: 10px;
     border: 1px solid #ccc;
     padding: 10px;

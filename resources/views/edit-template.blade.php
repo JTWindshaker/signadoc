@@ -45,7 +45,73 @@
         </label> --}}
     </div>
 
-    <!-- Panel de propiedades para campos de texto -->
+    {{-- Panel de propiedades --}}
+    <div id="field-properties" class="hidden">
+        <h3>Propieades</h3>
+
+        <div class="contProp propText propTextarea propDropdown hidden">
+            <label for="font-family">Fuente:</label>
+            <select id="font-family">
+                <option value="Courier">Courier</option>
+                <option value="Helvetica">Helvetica</option>
+                <option value="TimesRoman">Times Roman</option>
+            </select>
+        </div>
+
+        <div class="contProp propText propTextarea propDropdown hidden">
+            <label for="font-size">Tamaño de Fuente:</label>
+            <input type="number" id="font-size" value="12" min="6" max="72">
+        </div>
+
+        <div class="contProp propText propTextarea propDropdown hidden">
+            <label>
+                <input type="checkbox" id="font-bold">
+                Negrita
+            </label>
+        </div>
+
+        <div class="contProp propText propTextarea propDropdown hidden">
+            <label>
+                <input type="checkbox" id="font-italic">
+                Cursiva
+            </label>
+        </div>
+
+        <div class="contProp propText propTextarea propDropdown hidden">
+            <label for="font-color">Color de Fuente:</label>
+            <input type="color" id="font-color" value="#000000">
+        </div>
+
+        <div class="contProp propDropdown hidden">
+            <h4>Opciones</h4>
+            <div id="select-options-container">
+
+            </div>
+            <button id="add-option">Agregar opción</button>
+        </div>
+
+        <div class="contProp hidden">
+            <label for="image-file">Seleccionar imagen:</label>
+            <input type="file" id="image-file" accept="image/png, image/jpeg">
+        </div>
+
+        <div class="contProp propQR hidden">
+            <label for="image-opacity">Opacidad:</label>
+            <input type="range" id="image-opacity" min="0" max="1" step="0.1" value="1">
+            <span id="image-opacity-value">1</span>
+        </div>
+
+        <button id="apply-properties">Aplicar Propiedades</button>
+    </div>
+
+
+
+
+
+
+
+
+    {{-- <!-- Panel de propiedades para campos de texto -->
     <div id="field-properties">
         <h3>Propiedades del Campo de Texto</h3>
         <label for="font-family">Fuente:</label>
@@ -73,6 +139,9 @@
         <button id="apply-properties">Aplicar Propiedades</button>
     </div>
 
+
+
+    
     <!-- Panel de propiedades para campos select -->
     <div id="select-field-properties" style="display: none; border: 1px solid #ccc; padding: 10px; max-width: 300px;">
         <h3>Propiedades del Campo Select</h3>
@@ -107,6 +176,10 @@
         <button id="apply-select-properties">Aplicar Propiedades</button>
     </div>
 
+
+
+
+
     <!-- Panel de propiedades para campos de imagen -->
     <div id="image-field-properties" style="display: none; border: 1px solid #ccc; padding: 10px; max-width: 300px;">
         <h3>Propiedades de la Imagen</h3>
@@ -118,7 +191,7 @@
         <span id="image-opacity-value">1</span>
         <br>
         <button id="apply-image-properties">Aplicar Propiedades</button>
-    </div>
+    </div> --}}
 
     <!-- Contenedor donde se renderizará el PDF -->
     <div id="pdf-container">
