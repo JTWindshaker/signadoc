@@ -16,6 +16,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <!-- Styles -->
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.14.1/themes/base/jquery-ui.css" crossorigin="anonymous">
     <link href="{{ asset('vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
     <link href="{{ asset('css/main.css') }}" rel="stylesheet">
     <link href="{{ asset('css/edit-template.css') }}" rel="stylesheet">
@@ -38,18 +39,13 @@
         <button id="zoom-out">Zoom Out</button>
         <button id="guardar-campos" style="display:none;">Guardar</button>
         <div id="toolbar"></div>
-        <!-- Control para cambiar entre ver una página o todas -->
-        {{-- <label>
-            <input type="checkbox" id="toggle-view-mode">
-            Ver todas las páginas
-        </label> --}}
     </div>
 
     {{-- Panel de propiedades --}}
     <div id="field-properties" class="hidden">
         <h3>Propieades</h3>
 
-        <div class="contProp propText propTextarea propDropdown hidden">
+        <div class="contProp propText propDate propTextarea propDropdown hidden">
             <label for="font-family">Fuente:</label>
             <select id="font-family">
                 <option value="Courier">Courier</option>
@@ -58,28 +54,50 @@
             </select>
         </div>
 
-        <div class="contProp propText propTextarea propDropdown hidden">
+        <div class="contProp propText propDate propTextarea propDropdown hidden">
             <label for="font-size">Tamaño de Fuente:</label>
             <input type="number" id="font-size" value="12" min="6" max="72">
         </div>
 
-        <div class="contProp propText propTextarea propDropdown hidden">
+        <div class="contProp propText propDate propTextarea propDropdown hidden">
             <label>
                 <input type="checkbox" id="font-bold">
                 Negrita
             </label>
         </div>
 
-        <div class="contProp propText propTextarea propDropdown hidden">
+        <div class="contProp propText propDate propTextarea propDropdown hidden">
             <label>
                 <input type="checkbox" id="font-italic">
                 Cursiva
             </label>
         </div>
 
-        <div class="contProp propText propTextarea propDropdown hidden">
+        <div class="contProp propText propDate propTextarea propDropdown hidden">
             <label for="font-color">Color de Fuente:</label>
             <input type="color" id="font-color" value="#000000">
+        </div>
+
+        <div class="contProp propDate hidden">
+            <label for="format-date">Formato:</label>
+            <select id="format-date">
+                <option value="mm/dd/yy">mm/dd/yy</option>
+                <option value="dd/mm/yy">dd/mm/yy</option>
+                <option value="yy/mm/dd">yy/mm/dd</option>
+                <option value="mm-dd-yy">mm-dd-yy</option>
+                <option value="dd-mm-yy">dd-mm-yy</option>
+                <option value="yy-mm-dd">yy-mm-dd</option>
+            </select>
+        </div>
+
+        <div class="contProp propDate hidden">
+            <label for="min-date">Fecha mínima:</label>
+            <input type="text" id="min-date" value="" class="inputDate">
+        </div>
+
+        <div class="contProp propDate hidden">
+            <label for="max-date">Fecha mínima:</label>
+            <input type="text" id="max-date" value="" class="inputDate">
         </div>
 
         <div class="contProp propDropdown hidden">
@@ -104,95 +122,6 @@
         <button id="apply-properties">Aplicar Propiedades</button>
     </div>
 
-
-
-
-
-
-
-
-    {{-- <!-- Panel de propiedades para campos de texto -->
-    <div id="field-properties">
-        <h3>Propiedades del Campo de Texto</h3>
-        <label for="font-family">Fuente:</label>
-        <select id="font-family">
-            <option value="Helvetica">Helvetica</option>
-            <option value="TimesRoman">Times Roman</option>
-            <option value="Courier">Courier</option>
-        </select>
-        <br>
-        <label for="font-size">Tamaño de Fuente:</label>
-        <input type="number" id="font-size" value="12" min="6" max="72">
-        <br>
-        <label>
-            <input type="checkbox" id="font-bold">
-            Negrita
-        </label>
-        <label>
-            <input type="checkbox" id="font-italic">
-            Cursiva
-        </label>
-        <br>
-        <label for="font-color">Color de Fuente:</label>
-        <input type="color" id="font-color" value="#000000">
-        <br>
-        <button id="apply-properties">Aplicar Propiedades</button>
-    </div>
-
-
-
-    
-    <!-- Panel de propiedades para campos select -->
-    <div id="select-field-properties" style="display: none; border: 1px solid #ccc; padding: 10px; max-width: 300px;">
-        <h3>Propiedades del Campo Select</h3>
-        <label for="select-font-family">Fuente:</label>
-        <select id="select-font-family">
-            <option value="Helvetica">Helvetica</option>
-            <option value="TimesRoman">Times Roman</option>
-            <option value="Courier">Courier</option>
-        </select>
-        <br>
-        <label for="select-font-size">Tamaño de Fuente:</label>
-        <input type="number" id="select-font-size" value="12" min="6" max="72">
-        <br>
-        <label>
-            <input type="checkbox" id="select-font-bold">
-            Negrita
-        </label>
-        <label>
-            <input type="checkbox" id="select-font-italic">
-            Cursiva
-        </label>
-        <br>
-        <label for="select-font-color">Color de Fuente:</label>
-        <input type="color" id="select-font-color" value="#000000">
-        <br>
-        <h4>Opciones</h4>
-        <div id="select-options-container">
-            <!-- Se llenará dinámicamente con los inputs de cada opción -->
-        </div>
-        <button id="add-option">Agregar opción</button>
-        <br>
-        <button id="apply-select-properties">Aplicar Propiedades</button>
-    </div>
-
-
-
-
-
-    <!-- Panel de propiedades para campos de imagen -->
-    <div id="image-field-properties" style="display: none; border: 1px solid #ccc; padding: 10px; max-width: 300px;">
-        <h3>Propiedades de la Imagen</h3>
-        <label for="image-file">Seleccionar imagen:</label>
-        <input type="file" id="image-file" accept="image/png, image/jpeg">
-        <br>
-        <label for="image-opacity">Opacidad:</label>
-        <input type="range" id="image-opacity" min="0" max="1" step="0.1" value="1">
-        <span id="image-opacity-value">1</span>
-        <br>
-        <button id="apply-image-properties">Aplicar Propiedades</button>
-    </div> --}}
-
     <!-- Contenedor donde se renderizará el PDF -->
     <div id="pdf-container">
         <!-- En modo una página se usa un canvas con id="pdf-render". En modo todas se crearán múltiples canvases -->
@@ -215,6 +144,7 @@
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 
     <script src="{{ asset('vendor/jquery/jquery.min.js') }}"></script>
+    <script src="https://code.jquery.com/ui/1.14.1/jquery-ui.min.js" crossorigin="anonymous"></script>
     <script src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ asset('js/main.js') }}"></script>
     <script src="{{ asset('js/edit-template.js') }}"></script>

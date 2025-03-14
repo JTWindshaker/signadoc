@@ -3,6 +3,7 @@ const TIPO_CAMPO_TEXT = 1;
 const TIPO_CAMPO_SELECT = 2;
 const TIPO_CAMPO_QR = 3;
 const TIPO_CAMPO_TEXT_AREA = 4;
+const TIPO_CAMPO_DATE = 5;
 
 //Zoom valido
 const VALID_ZOOM_MIN = 0.3;
@@ -21,7 +22,6 @@ let pdfDoc = null,
 let pdfData = null;
 let viewAll = false;
 let renderTask = null;
-let isZoom = null;
 
 // Elementos del DOM
 const container = document.getElementById('pdf-container');
@@ -121,7 +121,6 @@ function loadTemplate(id) {
 async function loadPDF(pdfUrl, annotations) {
     try {
         const response = await fetch(pdfUrl);
-
         if (!response.ok) {
             throw new Error(`Error al obtener el PDF: ${response.statusText}`);
         }
@@ -133,6 +132,7 @@ async function loadPDF(pdfUrl, annotations) {
             pdfDoc = pdfDoc_;
             pageCountSpan.textContent = pdfDoc.numPages;
             viewAll = false;
+
             await renderSinglePage(pageNum, annotations, true);
         }).catch(err => {
             console.error("Error al cargar el PDF:", err);
@@ -148,7 +148,9 @@ const loadFieldsIntoTemplate = async (fields, isDB) => {
 
     if (isDB) {
         draggableFields = [];
+        var countIndex = 0;
         fields.forEach(field => {
+            countIndex++;
             const properties = field.propiedades;
             const propiedades = properties.properties;
             const typeField = field.tipo_campo;
@@ -526,6 +528,114 @@ const loadFieldsIntoTemplate = async (fields, isDB) => {
                     guardarCamposBtn.style.display = "inline-block";
                     break;
                 }
+
+                case TIPO_CAMPO_DATE: {
+                    if (!pdfDoc) {
+                        alert("Primero carga un PDF.");
+                        return;
+                    }
+
+                    const inputField = document.createElement("input");
+                    const containerDiv = document.createElement("div");
+
+                    const objContainer = properties.container;
+                    const defaultWidth = objContainer.width * scale;
+                    const defaultHeight = objContainer.height * scale;
+                    const initialLeft = objContainer.left * scale;
+                    const initialTop = objContainer.top * scale;
+
+                    containerDiv.className = objContainer.className;
+                    containerDiv.tabIndex = objContainer.tabIndex;
+                    containerDiv.style.width = defaultWidth + "px";
+                    containerDiv.style.height = defaultHeight + "px";
+                    containerDiv.style.left = initialLeft + "px";
+                    containerDiv.style.top = initialTop + "px";
+                    containerDiv.dataset.originLeft = initialLeft / scale;
+                    containerDiv.dataset.originTop = initialTop / scale;
+                    containerDiv.dataset.originWidth = defaultWidth / scale;
+                    containerDiv.dataset.originHeight = defaultHeight / scale;
+
+                    inputField.type = "text";
+                    inputField.placeholder = propiedades.text;
+                    inputField.style.background = "transparent";
+                    inputField.style.position = "absolute";
+                    inputField.readOnly = true;
+                    inputField.style.width = propiedades.width;
+                    inputField.style.height = propiedades.height;
+                    inputField.style.border = propiedades.border;
+                    inputField.style.outline = propiedades.outline;
+                    inputField.style.textAlign = propiedades.textAlign;
+                    inputField.style.color = propiedades.color;
+                    inputField.style.fontFamily = propiedades.fontFamily;
+                    inputField.style.fontSize = (parseFloat(propiedades.fontSize) * scale) + "px";
+                    inputField.style.fontStyle = propiedades.fontStyle;
+                    inputField.style.fontWeight = propiedades.fontWeight;
+                    inputField.style.textDecoration = propiedades.textDecoration;
+                    inputField.id = "datepicker-" + countIndex + "-" + Date.now();
+
+                    setTimeout(() => {
+                        $("#" + inputField.id).datepicker({
+                            dateFormat: propiedades.format,
+                            minDate: propiedades.minDate ? new Date(propiedades.minDate + "T00:00:00") : null,
+                            maxDate: propiedades.maxDate ? new Date(propiedades.maxDate + "T00:00:00") : null,
+                            showAnim: "fadeIn",
+                            changeMonth: true,
+                            changeYear: true,
+                            onSelect: function (dateText) {
+                                const fieldObj = draggableFields.find(field => field.fieldElement === inputField);
+
+                                if (fieldObj) {
+                                    fieldObj.properties.text = dateText;
+                                }
+                            }
+                        });
+                    }, 200);
+
+                    containerDiv.appendChild(inputField);
+                    container.appendChild(containerDiv);
+
+                    // Al crear el campo se calcula la posición base en coordenadas PDF y se guarda en originalPdfData
+                    properties.pdfData.pdfX = initialLeft / scale;
+                    properties.pdfData.pdfFieldWidth = defaultWidth / scale;
+                    properties.pdfData.pdfFieldHeight = defaultHeight / scale;
+                    properties.pdfData.pdfY = (singleCanvas.height - initialTop - defaultHeight) / scale;
+
+                    const fieldObj = {
+                        container: containerDiv,
+                        fieldElement: inputField, // Se crea apartir de las propiedades principales en db
+                        pdfData: properties.pdfData,
+                        originalPdfData: properties.pdfData,
+                        page: properties.page,
+                        originalPage: properties.page,
+                        id: Date.now(),
+                        idField: properties.idField,
+                        isEditable: properties.isEditable,
+                        name: properties.name,
+                        type: "date",
+                        properties: {
+                            text: propiedades.text,
+                            width: propiedades.width,
+                            height: propiedades.height,
+                            border: propiedades.border,
+                            outline: propiedades.outline,
+                            textAlign: propiedades.textAlign,
+                            color: propiedades.color,
+                            format: propiedades.format,
+                            minDate: propiedades.minDate,
+                            maxDate: propiedades.maxDate,
+                            fontFamily: propiedades.fontFamily,
+                            fontSize: propiedades.fontSize,
+                            fontStyle: propiedades.fontStyle,
+                            fontWeight: propiedades.fontWeight,
+                            textDecoration: propiedades.textDecoration,
+                        }
+                    };
+
+                    draggableFields.push(fieldObj);
+                    guardarCamposBtn.style.display = "inline-block";
+                    break;
+                }
+
                 default:
                     break;
             }
@@ -793,6 +903,75 @@ const loadFieldsIntoTemplate = async (fields, isDB) => {
                     break;
                 }
 
+                case TIPO_CAMPO_DATE: {
+                    if (!pdfDoc) {
+                        alert("Primero carga un PDF.");
+                        return;
+                    }
+
+                    const inputField = field.fieldElement;
+                    inputField.style.fontSize = (parseFloat(propiedades.fontSize) * scale) + "px";
+
+                    const containerDiv = field.container;
+
+                    const defaultWidth = containerDiv.dataset.originWidth * scale;
+                    const defaultHeight = containerDiv.dataset.originHeight * scale;
+                    const initialLeft = containerDiv.dataset.originLeft * scale;
+                    const initialTop = containerDiv.dataset.originTop * scale;
+
+                    containerDiv.style.width = defaultWidth + "px";
+                    containerDiv.style.height = defaultHeight + "px";
+                    containerDiv.style.left = initialLeft + "px";
+                    containerDiv.style.top = initialTop + "px";
+
+                    $(containerDiv).append(inputField);
+
+                    if (pageNum == field.page) {
+                        container.appendChild(containerDiv);
+                    }
+
+                    // Al crear el campo se calcula la posición base en coordenadas PDF y se guarda en originalPdfData
+                    field.pdfData.pdfX = initialLeft / scale;
+                    field.pdfData.pdfFieldWidth = defaultWidth / scale;
+                    field.pdfData.pdfFieldHeight = defaultHeight / scale;
+                    field.pdfData.pdfY = (singleCanvas.height - initialTop - defaultHeight) / scale;
+
+                    const fieldObj = {
+                        container: containerDiv,
+                        fieldElement: inputField, // Se crea apartir de las propiedades principales en db
+                        pdfData: field.pdfData,
+                        originalPdfData: field.pdfData,
+                        page: field.page,
+                        originalPage: field.page,
+                        id: Date.now(),
+                        idField: field.idField,
+                        isEditable: field.isEditable,
+                        name: field.name,
+                        type: "date",
+                        properties: {
+                            text: propiedades.text,
+                            width: propiedades.width,
+                            height: propiedades.height,
+                            border: propiedades.border,
+                            outline: propiedades.outline,
+                            textAlign: propiedades.textAlign,
+                            color: propiedades.color,
+                            format: propiedades.format,
+                            minDate: propiedades.minDate,
+                            maxDate: propiedades.maxDate,
+                            fontFamily: propiedades.fontFamily,
+                            fontSize: propiedades.fontSize,
+                            fontStyle: propiedades.fontStyle,
+                            fontWeight: propiedades.fontWeight,
+                            textDecoration: propiedades.textDecoration,
+                        }
+                    };
+
+                    draggableFields.push(fieldObj);
+                    guardarCamposBtn.style.display = "inline-block";
+                    break;
+                }
+
                 default:
                     break;
             }
@@ -865,8 +1044,15 @@ function updateDraggableFields() {
             fieldObj.container.style.width = (fieldObj.originalPdfData.pdfFieldWidth * scale) + "px";
             fieldObj.container.style.height = (fieldObj.originalPdfData.pdfFieldHeight * scale) + "px";
 
-            if (fieldObj.type === "text" || fieldObj.type === "dropdown" || fieldObj.type === "textarea") {
-                fieldObj.fieldElement.style.fontSize = (fieldObj.properties.fontSize * scale) + "px";
+            switch (fieldObj.idField) {
+                case TIPO_CAMPO_TEXT:
+                case TIPO_CAMPO_SELECT:
+                case TIPO_CAMPO_TEXT_AREA:
+                case TIPO_CAMPO_DATE:
+                    fieldObj.fieldElement.style.fontSize = (fieldObj.properties.fontSize * scale) + "px";
+                    break;
+                default:
+                    break;
             }
         } else {
             fieldObj.container.style.display = "none";
@@ -878,10 +1064,6 @@ guardarCamposBtn.addEventListener('click', async () => {
     if (draggableFields.length === 0) return;
 
     try {
-        // draggableFields.forEach(fieldObj => {
-        // updateFieldPDFData(fieldObj);
-        // });
-
         const pdfDocLib = await PDFLib.PDFDocument.load(pdfData);
         const pages = pdfDocLib.getPages();
 
@@ -890,154 +1072,174 @@ guardarCamposBtn.addEventListener('click', async () => {
             const targetPage = pages[fieldObj.page - 1];
             const { pdfX, pdfY, pdfFieldWidth, pdfFieldHeight } = fieldObj.pdfData;
 
-            if (fieldObj.type === "text") {
-                console.log(fieldObj);
-                let font, fontSize = 12, color = PDFLib.rgb(0, 0, 0);
+            switch (fieldObj.idField) {
+                case TIPO_CAMPO_TEXT:
+                    var font, fontSize = 12, color = PDFLib.rgb(0, 0, 0);
 
-                if (fieldObj.properties) {
-                    const standardFont = getStandardFont(fieldObj.properties);
-                    font = await pdfDocLib.embedFont(standardFont);
-                    fontSize = fieldObj.properties.fontSize || 12;
+                    if (fieldObj.properties) {
+                        const standardFont = getStandardFont(fieldObj.properties);
+                        font = await pdfDocLib.embedFont(standardFont);
+                        fontSize = fieldObj.properties.fontSize || 12;
 
-                    const colorHex = fieldObj.properties.color || "#000000";
-                    const r = parseInt(colorHex.substring(1, 3), 16) / 255;
-                    const g = parseInt(colorHex.substring(3, 5), 16) / 255;
-                    const b = parseInt(colorHex.substring(5, 7), 16) / 255;
-                    color = PDFLib.rgb(r, g, b);
-                } else {
-                    font = await pdfDocLib.embedFont(PDFLib.StandardFonts.Helvetica);
-                }
-
-                targetPage.drawText(fieldObj.fieldElement.value, {
-                    x: pdfX,
-                    y: pdfY,
-                    size: fontSize,
-                    font: font,
-                    color: color,
-                });
-            } else if (fieldObj.type === "dropdown") {
-                let font, fontSize = 12, color = PDFLib.rgb(0, 0, 0);
-                const text = fieldObj.fieldElement.options[fieldObj.fieldElement.selectedIndex].text;
-
-                if (fieldObj.properties) {
-                    const standardFont = getStandardFont(fieldObj.properties);
-                    font = await pdfDocLib.embedFont(standardFont);
-                    fontSize = fieldObj.properties.fontSize || 12;
-
-                    const colorHex = fieldObj.properties.color || "#000000";
-                    const r = parseInt(colorHex.substring(1, 3), 16) / 255;
-                    const g = parseInt(colorHex.substring(3, 5), 16) / 255;
-                    const b = parseInt(colorHex.substring(5, 7), 16) / 255;
-                    color = PDFLib.rgb(r, g, b);
-                } else {
-                    font = await pdfDocLib.embedFont(PDFLib.StandardFonts.Helvetica);
-                }
-
-                targetPage.drawText(text, {
-                    x: pdfX,
-                    y: pdfY,
-                    size: fontSize,
-                    font: font,
-                    color: color,
-                });
-            } else if (fieldObj.type === "image") {
-                const imageDataUrl = fieldObj.fieldElement.src;
-
-                if (imageDataUrl && imageDataUrl.startsWith("data:")) {
-                    const imageBytes = dataURLtoUint8Array(imageDataUrl);
-                    let embeddedImage;
-
-                    if (imageDataUrl.startsWith("data:image/png")) {
-                        embeddedImage = await pdfDocLib.embedPng(imageBytes);
-                    } else if (imageDataUrl.startsWith("data:image/jpeg") || imageDataUrl.startsWith("data:image/jpg")) {
-                        embeddedImage = await pdfDocLib.embedJpg(imageBytes);
+                        const colorHex = fieldObj.properties.color || "#000000";
+                        const r = parseInt(colorHex.substring(1, 3), 16) / 255;
+                        const g = parseInt(colorHex.substring(3, 5), 16) / 255;
+                        const b = parseInt(colorHex.substring(5, 7), 16) / 255;
+                        color = PDFLib.rgb(r, g, b);
                     } else {
-                        console.error("Formato de imagen no soportado.");
-                        continue;
+                        font = await pdfDocLib.embedFont(PDFLib.StandardFonts.Helvetica);
                     }
 
-                    targetPage.drawImage(embeddedImage, {
+                    targetPage.drawText(fieldObj.fieldElement.value, {
                         x: pdfX,
                         y: pdfY,
-                        opacity: parseFloat(fieldObj.fieldElement.style.opacity),
-                        width: pdfFieldWidth,
-                        height: pdfFieldHeight,
+                        size: fontSize,
+                        font: font,
+                        color: color,
                     });
-                }
-                else {
-                    console.error("La URL de la imagen no es válida:", imageDataUrl);
-                    continue;
-                }
-            } else if (fieldObj.type === "textarea") {
-                let font, fontSize = 12, color = PDFLib.rgb(0, 0, 0);
+                    break;
+                case TIPO_CAMPO_SELECT:
+                    var font, fontSize = 12, color = PDFLib.rgb(0, 0, 0);
+                    const text = fieldObj.fieldElement.options[fieldObj.fieldElement.selectedIndex].text;
 
-                if (fieldObj.properties) {
-                    const standardFont = getStandardFont(fieldObj.properties);
-                    font = await pdfDocLib.embedFont(standardFont);
-                    fontSize = fieldObj.properties.fontSize || 12;
+                    if (fieldObj.properties) {
+                        const standardFont = getStandardFont(fieldObj.properties);
+                        font = await pdfDocLib.embedFont(standardFont);
+                        fontSize = fieldObj.properties.fontSize || 12;
 
-                    const colorHex = fieldObj.properties.color || "#000000";
-                    const r = parseInt(colorHex.substring(1, 3), 16) / 255;
-                    const g = parseInt(colorHex.substring(3, 5), 16) / 255;
-                    const b = parseInt(colorHex.substring(5, 7), 16) / 255;
-                    color = PDFLib.rgb(r, g, b);
-                } else {
-                    font = await pdfDocLib.embedFont(PDFLib.StandardFonts.Helvetica);
-                }
+                        const colorHex = fieldObj.properties.color || "#000000";
+                        const r = parseInt(colorHex.substring(1, 3), 16) / 255;
+                        const g = parseInt(colorHex.substring(3, 5), 16) / 255;
+                        const b = parseInt(colorHex.substring(5, 7), 16) / 255;
+                        color = PDFLib.rgb(r, g, b);
+                    } else {
+                        font = await pdfDocLib.embedFont(PDFLib.StandardFonts.Helvetica);
+                    }
 
-                const topY = (pdfY + pdfFieldHeight) - fontSize;
+                    targetPage.drawText(text, {
+                        x: pdfX,
+                        y: pdfY,
+                        size: fontSize,
+                        font: font,
+                        color: color,
+                    });
+                    break;
+                case TIPO_CAMPO_QR:
+                    const imageDataUrl = fieldObj.fieldElement.src;
 
-                targetPage.drawText(fieldObj.fieldElement.value, {
-                    maxWidth: parseFloat(fieldObj.fieldElement.getBoundingClientRect().width),
-                    lineHeight: fontSize * FACTOR_HEIGHT_FONT_SIZE_TEXT_AREA,
-                    x: pdfX,
-                    y: topY,
-                    size: fontSize,
-                    font: font,
-                    color: color,
-                });
+                    if (imageDataUrl && imageDataUrl.startsWith("data:")) {
+                        const imageBytes = dataURLtoUint8Array(imageDataUrl);
+                        let embeddedImage;
+
+                        if (imageDataUrl.startsWith("data:image/png")) {
+                            embeddedImage = await pdfDocLib.embedPng(imageBytes);
+                        } else if (imageDataUrl.startsWith("data:image/jpeg") || imageDataUrl.startsWith("data:image/jpg")) {
+                            embeddedImage = await pdfDocLib.embedJpg(imageBytes);
+                        } else {
+                            console.error("Formato de imagen no soportado.");
+                            continue;
+                        }
+
+                        targetPage.drawImage(embeddedImage, {
+                            x: pdfX,
+                            y: pdfY,
+                            opacity: parseFloat(fieldObj.fieldElement.style.opacity),
+                            width: pdfFieldWidth,
+                            height: pdfFieldHeight,
+                        });
+                    } else {
+                        console.error("La URL de la imagen no es válida:", imageDataUrl);
+                        continue;
+                    }
+                    break;
+                case TIPO_CAMPO_TEXT_AREA:
+                    var font, fontSize = 12, color = PDFLib.rgb(0, 0, 0);
+
+                    if (fieldObj.properties) {
+                        const standardFont = getStandardFont(fieldObj.properties);
+                        font = await pdfDocLib.embedFont(standardFont);
+                        fontSize = fieldObj.properties.fontSize || 12;
+
+                        const colorHex = fieldObj.properties.color || "#000000";
+                        const r = parseInt(colorHex.substring(1, 3), 16) / 255;
+                        const g = parseInt(colorHex.substring(3, 5), 16) / 255;
+                        const b = parseInt(colorHex.substring(5, 7), 16) / 255;
+                        color = PDFLib.rgb(r, g, b);
+                    } else {
+                        font = await pdfDocLib.embedFont(PDFLib.StandardFonts.Helvetica);
+                    }
+
+                    const topY = (pdfY + pdfFieldHeight) - fontSize;
+
+                    targetPage.drawText(fieldObj.fieldElement.value, {
+                        maxWidth: parseFloat(fieldObj.fieldElement.getBoundingClientRect().width),
+                        lineHeight: fontSize * FACTOR_HEIGHT_FONT_SIZE_TEXT_AREA,
+                        x: pdfX,
+                        y: topY,
+                        size: fontSize,
+                        font: font,
+                        color: color,
+                    });
+                    break;
+                case TIPO_CAMPO_DATE:
+                    var font, fontSize = 12, color = PDFLib.rgb(0, 0, 0);
+
+                    if (fieldObj.properties) {
+                        const standardFont = getStandardFont(fieldObj.properties);
+                        font = await pdfDocLib.embedFont(standardFont);
+                        fontSize = fieldObj.properties.fontSize || 12;
+
+                        const colorHex = fieldObj.properties.color || "#000000";
+                        const r = parseInt(colorHex.substring(1, 3), 16) / 255;
+                        const g = parseInt(colorHex.substring(3, 5), 16) / 255;
+                        const b = parseInt(colorHex.substring(5, 7), 16) / 255;
+                        color = PDFLib.rgb(r, g, b);
+                    } else {
+                        font = await pdfDocLib.embedFont(PDFLib.StandardFonts.Helvetica);
+                    }
+
+                    targetPage.drawText(fieldObj.fieldElement.value, {
+                        x: pdfX,
+                        y: pdfY,
+                        size: fontSize,
+                        font: font,
+                        color: color,
+                    });
+                    break;
+                default:
+                    break;
             }
         }
 
         const modifiedPdfBytes = await pdfDocLib.save();
         pdfData = modifiedPdfBytes;
 
-        //Descarga
-        const blob = new Blob([pdfData], { type: 'application/pdf' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = "modificado.pdf";
-        a.click();
-        URL.revokeObjectURL(url);
-        //Fin Descarga
+        pdfjsLib.getDocument({ data: pdfData }).promise.then(pdfDoc_ => {
+            pdfDoc = pdfDoc_;
+            pageCountSpan.textContent = pdfDoc.numPages;
+            pageNum = Math.min(pageNum, pdfDoc.numPages);
+            renderSinglePage(pageNum);
+            draggableFields.forEach(fieldObj => {
+                if (fieldObj.container.parentNode) {
+                    fieldObj.container.parentNode.removeChild(fieldObj.container);
+                }
+            });
 
-        // pdfjsLib.getDocument({ data: pdfData }).promise.then(pdfDoc_ => {
-        //     pdfDoc = pdfDoc_;
-        //     pageCountSpan.textContent = pdfDoc.numPages;
-        //     pageNum = Math.min(pageNum, pdfDoc.numPages);
-        //     renderSinglePage(pageNum);
-        //     draggableFields.forEach(fieldObj => {
-        //         if (fieldObj.container.parentNode) {
-        //             fieldObj.container.parentNode.removeChild(fieldObj.container);
-        //         }
-        //     });
+            draggableFields = [];
+            guardarCamposBtn.style.display = "none";
 
-        //     draggableFields = [];
-        //     guardarCamposBtn.style.display = "none";
-
-        //     //Descarga
-        //     const blob = new Blob([pdfData], { type: 'application/pdf' });
-        //     const url = URL.createObjectURL(blob);
-        //     const a = document.createElement('a');
-        //     a.href = url;
-        //     a.download = "modificado.pdf";
-        //     a.click();
-        //     URL.revokeObjectURL(url);
-        //     //Fin Descarga
-        // }).catch(err => {
-        //     console.error("Error al recargar el PDF modificado:", err);
-        // });
+            //Descarga
+            const blob = new Blob([pdfData], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "modificado.pdf";
+            a.click();
+            URL.revokeObjectURL(url);
+            //Fin Descarga
+        }).catch(err => {
+            console.error("Error al recargar el PDF modificado:", err);
+        });
     } catch (err) {
         console.error("Error al guardar los campos:", err);
     }

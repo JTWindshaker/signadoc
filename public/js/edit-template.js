@@ -3,6 +3,7 @@ const TIPO_CAMPO_TEXT = 1;
 const TIPO_CAMPO_SELECT = 2;
 const TIPO_CAMPO_QR = 3;
 const TIPO_CAMPO_TEXT_AREA = 4;
+const TIPO_CAMPO_DATE = 5;
 
 //Zoom valido
 const VALID_ZOOM_MIN = 0.3;
@@ -47,6 +48,12 @@ $(document).ready(function () {
         $("#image-opacity-value").text($(this).val());
     });
 
+    $(".inputDate").datepicker({
+        dateFormat: "yy-mm-dd",
+        showAnim: "fadeIn",
+        changeMonth: true,
+        changeYear: true,
+    });
 
     loadFields();
     loadTemplate(idTemplate);
@@ -133,8 +140,15 @@ const renderPageLazy = (pageNumber, pageContainer) => {
                     fieldObj.container.style.width = (fieldObj.originalPdfData.pdfFieldWidth * scale) + "px";
                     fieldObj.container.style.height = (fieldObj.originalPdfData.pdfFieldHeight * scale) + "px";
 
-                    if (fieldObj.type === "text" || fieldObj.type === "dropdown") {
-                        fieldObj.fieldElement.style.fontSize = (fieldObj.properties.fontSize * scale) + "px";
+                    switch (fieldObj.idField) {
+                        case TIPO_CAMPO_TEXT:
+                        case TIPO_CAMPO_SELECT:
+                        case TIPO_CAMPO_TEXT_AREA:
+                        case TIPO_CAMPO_DATE:
+                            fieldObj.fieldElement.style.fontSize = (fieldObj.properties.fontSize * scale) + "px";
+                            break;
+                        default:
+                            break;
                     }
 
                     if (fieldObj.container.parentNode !== pageContainer) {
@@ -818,6 +832,160 @@ function loadFields() {
                                 });
                                 break;
                             }
+
+                            case TIPO_CAMPO_DATE: {
+                                if (!pdfDoc) {
+                                    alert("Primero carga un PDF.");
+                                    return;
+                                }
+
+                                const inputField = document.createElement("input");
+                                const containerDiv = document.createElement("div");
+                                const resizeHandle = document.createElement("div");
+                                const buttonContainer = document.createElement("div");
+                                const buttonSettings = document.createElement("button");
+                                const buttonDelete = document.createElement("button");
+                                const objContainer = propiedades.container;
+                                const defaultWidth = (objContainer.width) * scale;
+
+                                const computedFontSize = propiedades.fontSize * scale;
+                                const lineHeight = computedFontSize * FACTOR_HEIGHT_FONT_SIZE;
+                                const defaultHeight = lineHeight;
+
+                                const initialLeft = ((singleCanvas.width - defaultWidth) * scale) / 2;
+                                const initialTop = ((singleCanvas.height - defaultHeight) * scale) / 2;
+
+                                containerDiv.className = objContainer.className;
+                                containerDiv.tabIndex = objContainer.tabIndex;
+                                containerDiv.style.width = defaultWidth + "px";
+                                containerDiv.style.height = defaultHeight + "px";
+                                containerDiv.style.left = initialLeft + "px";
+                                containerDiv.style.top = initialTop + "px";
+                                containerDiv.dataset.originLeft = initialLeft / scale;
+                                containerDiv.dataset.originTop = initialTop / scale;
+                                containerDiv.dataset.originWidth = defaultWidth / scale;
+                                containerDiv.dataset.originHeight = defaultHeight / scale;
+
+                                inputField.type = "text";
+                                inputField.value = propiedades.text;
+                                inputField.style.background = "transparent";
+                                inputField.style.position = "absolute";
+                                inputField.readOnly = true;
+                                inputField.style.width = propiedades.width;
+                                inputField.style.height = propiedades.height;
+                                inputField.style.border = propiedades.border;
+                                inputField.style.outline = propiedades.outline;
+                                inputField.style.textAlign = propiedades.textAlign;
+                                inputField.style.color = propiedades.color;
+                                inputField.style.fontFamily = propiedades.fontFamily;
+                                inputField.style.fontSize = (propiedades.fontSize) * scale + "px";
+                                inputField.style.fontStyle = propiedades.fontStyle;
+                                inputField.style.fontWeight = propiedades.fontWeight;
+                                inputField.style.textDecoration = propiedades.textDecoration;
+
+                                containerDiv.appendChild(inputField);
+                                resizeHandle.className = "resize-handle";
+                                containerDiv.appendChild(resizeHandle);
+
+                                buttonContainer.className = "field-buttons";
+                                buttonSettings.innerHTML = "⚙️";
+                                buttonSettings.title = "Propiedades";
+                                buttonDelete.innerHTML = "🗑️";
+                                buttonDelete.title = "Eliminar campo";
+
+                                buttonContainer.appendChild(buttonSettings);
+                                buttonContainer.appendChild(buttonDelete);
+                                containerDiv.appendChild(buttonContainer);
+
+                                container.appendChild(containerDiv);
+                                makeDraggable(containerDiv);
+                                makeResizableOnlyX(containerDiv, resizeHandle);
+
+                                // Al crear el campo se calcula la posición base en coordenadas PDF y se guarda en originalPdfData
+                                propiedades.pdfData.pdfX = initialLeft / scale;
+                                propiedades.pdfData.pdfFieldWidth = defaultWidth / scale;
+                                propiedades.pdfData.pdfFieldHeight = defaultHeight / scale;
+                                propiedades.pdfData.pdfY = (singleCanvas.height - initialTop - defaultHeight) / scale;
+
+                                const fieldObj = {
+                                    container: containerDiv,
+                                    fieldElement: inputField, // Se crea apartir de las propiedades principales en db
+                                    pdfData: propiedades.pdfData,
+                                    originalPdfData: propiedades.pdfData,
+                                    page: pageNum,
+                                    originalPage: pageNum,
+                                    id: Date.now(),
+                                    idField: propiedades.idField,
+                                    isEditable: propiedades.isEditable,
+                                    name: propiedades.name,
+                                    type: "date",
+                                    properties: {
+                                        text: propiedades.text,
+                                        width: propiedades.width,
+                                        height: propiedades.height,
+                                        border: propiedades.border,
+                                        outline: propiedades.outline,
+                                        textAlign: propiedades.textAlign,
+                                        color: propiedades.color,
+                                        format: propiedades.format,
+                                        minDate: propiedades.minDate,
+                                        maxDate: propiedades.maxDate,
+                                        fontFamily: propiedades.fontFamily,
+                                        fontSize: propiedades.fontSize,
+                                        fontStyle: propiedades.fontStyle,
+                                        fontWeight: propiedades.fontWeight,
+                                        textDecoration: propiedades.textDecoration,
+                                    }
+                                };
+
+                                draggableFields.push(fieldObj);
+                                guardarCamposBtn.style.display = "inline-block";
+
+                                containerDiv.addEventListener("click", (e) => {
+                                    e.stopPropagation();
+                                    hideAllButtonContainersExcept(containerDiv);
+
+                                    const buttonContainer = containerDiv.querySelector('.field-buttons');
+                                    if (buttonContainer) {
+                                        buttonContainer.style.display = "block";
+                                    }
+
+                                    activeFieldObj = fieldObj;
+                                });
+
+                                containerDiv.addEventListener("focus", () => {
+                                    hideAllButtonContainersExcept(containerDiv);
+
+                                    const buttonContainer = containerDiv.querySelector('.field-buttons');
+                                    if (buttonContainer) {
+                                        buttonContainer.style.display = "block";
+                                    }
+
+                                    activeFieldObj = fieldObj;
+                                });
+
+                                containerDiv.addEventListener("blur", () => {
+                                    buttonContainer.style.display = "none";
+                                });
+
+                                buttonDelete.addEventListener("click", (e) => {
+                                    e.stopPropagation();
+                                    containerDiv.remove();
+                                    draggableFields = draggableFields.filter(item => item.container !== containerDiv);
+
+                                    if (draggableFields.length == 0) {
+                                        guardarCamposBtn.style.display = "none";
+                                    }
+                                });
+
+                                buttonSettings.addEventListener("click", (e) => {
+                                    e.stopPropagation();
+                                    activeFieldObj = fieldObj;
+                                    showPropertiesPanel(fieldObj);
+                                });
+                                break;
+                            }
+
                             default:
                                 break;
                         }
@@ -1495,6 +1663,160 @@ const loadFieldsIntoTemplate = async (fields, isDB) => {
                     });
                     break;
                 }
+
+                case TIPO_CAMPO_DATE: {
+                    if (!pdfDoc) {
+                        alert("Primero carga un PDF.");
+                        return;
+                    }
+
+                    const inputField = document.createElement("input");
+                    const containerDiv = document.createElement("div");
+                    const resizeHandle = document.createElement("div");
+                    const buttonContainer = document.createElement("div");
+                    const buttonSettings = document.createElement("button");
+                    const buttonDelete = document.createElement("button");
+                    const objContainer = properties.container;
+                    const defaultWidth = objContainer.width * scale;
+
+                    const computedFontSize = propiedades.fontSize * scale;
+                    const lineHeight = computedFontSize * FACTOR_HEIGHT_FONT_SIZE;
+                    const defaultHeight = lineHeight;
+
+                    const initialLeft = objContainer.left * scale;
+                    const initialTop = objContainer.top * scale;
+
+                    containerDiv.className = objContainer.className;
+                    containerDiv.tabIndex = objContainer.tabIndex;
+                    containerDiv.style.width = defaultWidth + "px";
+                    containerDiv.style.height = defaultHeight + "px";
+                    containerDiv.style.left = initialLeft + "px";
+                    containerDiv.style.top = initialTop + "px";
+                    containerDiv.dataset.originLeft = initialLeft / scale;
+                    containerDiv.dataset.originTop = initialTop / scale;
+                    containerDiv.dataset.originWidth = defaultWidth / scale;
+                    containerDiv.dataset.originHeight = defaultHeight / scale;
+
+                    inputField.type = "text";
+                    inputField.value = propiedades.text;
+                    inputField.style.background = "transparent";
+                    inputField.style.position = "absolute";
+                    inputField.readOnly = true;
+                    inputField.style.width = propiedades.width;
+                    inputField.style.height = propiedades.height;
+                    inputField.style.border = propiedades.border;
+                    inputField.style.outline = propiedades.outline;
+                    inputField.style.textAlign = propiedades.textAlign;
+                    inputField.style.color = propiedades.color;
+                    inputField.style.fontFamily = propiedades.fontFamily;
+                    inputField.style.fontSize = propiedades.fontSize + "px";
+                    inputField.style.fontStyle = propiedades.fontStyle;
+                    inputField.style.fontWeight = propiedades.fontWeight;
+                    inputField.style.textDecoration = propiedades.textDecoration;
+
+                    containerDiv.appendChild(inputField);
+                    resizeHandle.className = "resize-handle";
+                    containerDiv.appendChild(resizeHandle);
+
+                    buttonContainer.className = "field-buttons";
+                    buttonSettings.innerHTML = "⚙️";
+                    buttonSettings.title = "Propiedades";
+                    buttonDelete.innerHTML = "🗑️";
+                    buttonDelete.title = "Eliminar campo";
+
+                    buttonContainer.appendChild(buttonSettings);
+                    buttonContainer.appendChild(buttonDelete);
+                    containerDiv.appendChild(buttonContainer);
+
+                    container.appendChild(containerDiv);
+                    makeDraggable(containerDiv);
+                    makeResizableOnlyX(containerDiv, resizeHandle);
+
+                    // Al crear el campo se calcula la posición base en coordenadas PDF y se guarda en originalPdfData
+                    properties.pdfData.pdfX = initialLeft / scale;
+                    properties.pdfData.pdfFieldWidth = defaultWidth / scale;
+                    properties.pdfData.pdfFieldHeight = defaultHeight / scale;
+                    properties.pdfData.pdfY = (singleCanvas.height - initialTop - defaultHeight) / scale;
+
+                    const fieldObj = {
+                        container: containerDiv,
+                        fieldElement: inputField, // Se crea apartir de las propiedades principales en db
+                        pdfData: properties.pdfData,
+                        originalPdfData: properties.pdfData,
+                        page: properties.page,
+                        originalPage: properties.page,
+                        id: Date.now(),
+                        idField: properties.idField,
+                        isEditable: properties.isEditable,
+                        name: properties.name,
+                        type: "date",
+                        properties: {
+                            text: propiedades.text,
+                            width: propiedades.width,
+                            height: propiedades.height,
+                            border: propiedades.border,
+                            outline: propiedades.outline,
+                            textAlign: propiedades.textAlign,
+                            color: propiedades.color,
+                            format: propiedades.format,
+                            minDate: propiedades.minDate,
+                            maxDate: propiedades.maxDate,
+                            fontFamily: propiedades.fontFamily,
+                            fontSize: propiedades.fontSize,
+                            fontStyle: propiedades.fontStyle,
+                            fontWeight: propiedades.fontWeight,
+                            textDecoration: propiedades.textDecoration,
+                        }
+                    };
+
+                    draggableFields.push(fieldObj);
+                    guardarCamposBtn.style.display = "inline-block";
+
+                    containerDiv.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        hideAllButtonContainersExcept(containerDiv);
+
+                        const buttonContainer = containerDiv.querySelector('.field-buttons');
+                        if (buttonContainer) {
+                            buttonContainer.style.display = "block";
+                        }
+
+                        activeFieldObj = fieldObj;
+                    });
+
+                    containerDiv.addEventListener("focus", () => {
+                        hideAllButtonContainersExcept(containerDiv);
+
+                        const buttonContainer = containerDiv.querySelector('.field-buttons');
+                        if (buttonContainer) {
+                            buttonContainer.style.display = "block";
+                        }
+
+                        activeFieldObj = fieldObj;
+                    });
+
+                    containerDiv.addEventListener("blur", () => {
+                        buttonContainer.style.display = "none";
+                    });
+
+                    buttonDelete.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        containerDiv.remove();
+                        draggableFields = draggableFields.filter(item => item.container !== containerDiv);
+
+                        if (draggableFields.length == 0) {
+                            guardarCamposBtn.style.display = "none";
+                        }
+                    });
+
+                    buttonSettings.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        activeFieldObj = fieldObj;
+                        showPropertiesPanel(fieldObj);
+                    });
+                    break;
+                }
+
                 default:
                     break;
             }
@@ -1996,6 +2318,133 @@ const loadFieldsIntoTemplate = async (fields, isDB) => {
                     break;
                 }
 
+                case TIPO_CAMPO_DATE: {
+                    if (!pdfDoc) {
+                        alert("Primero carga un PDF.");
+                        return;
+                    }
+
+                    const inputField = field.fieldElement;
+                    const containerDiv = field.container;
+                    $(containerDiv).html("");
+                    const resizeHandle = document.createElement("div");
+                    const buttonContainer = document.createElement("div");
+                    const buttonSettings = document.createElement("button");
+                    const buttonDelete = document.createElement("button");
+
+                    const defaultWidth = containerDiv.dataset.originWidth * scale;
+                    const defaultHeight = containerDiv.dataset.originHeight * scale;
+                    const initialLeft = containerDiv.dataset.originLeft * scale;
+                    const initialTop = containerDiv.dataset.originTop * scale;
+
+                    containerDiv.style.width = defaultWidth + "px";
+                    containerDiv.style.height = defaultHeight + "px";
+                    containerDiv.style.left = initialLeft + "px";
+                    containerDiv.style.top = initialTop + "px";
+
+                    $(containerDiv).append(inputField);
+                    resizeHandle.className = "resize-handle";
+                    $(containerDiv).append(resizeHandle);
+
+                    buttonContainer.className = "field-buttons";
+                    buttonSettings.innerHTML = "⚙️";
+                    buttonSettings.title = "Propiedades";
+                    buttonDelete.innerHTML = "🗑️";
+                    buttonDelete.title = "Eliminar campo";
+
+                    buttonContainer.appendChild(buttonSettings);
+                    buttonContainer.appendChild(buttonDelete);
+                    containerDiv.appendChild(buttonContainer);
+
+                    container.appendChild(containerDiv);
+                    makeDraggable(containerDiv);
+                    makeResizableOnlyX(containerDiv, resizeHandle);
+
+                    // Al crear el campo se calcula la posición base en coordenadas PDF y se guarda en originalPdfData
+                    field.pdfData.pdfX = initialLeft / scale;
+                    field.pdfData.pdfFieldWidth = defaultWidth / scale;
+                    field.pdfData.pdfFieldHeight = defaultHeight / scale;
+                    field.pdfData.pdfY = (singleCanvas.height - initialTop - defaultHeight) / scale;
+
+                    const fieldObj = {
+                        container: containerDiv,
+                        fieldElement: inputField, // Se crea apartir de las propiedades principales en db
+                        pdfData: field.pdfData,
+                        originalPdfData: field.pdfData,
+                        page: field.page,
+                        originalPage: field.page,
+                        id: Date.now(),
+                        idField: field.idField,
+                        isEditable: field.isEditable,
+                        name: field.name,
+                        type: "date",
+                        properties: {
+                            text: propiedades.text,
+                            width: propiedades.width,
+                            height: propiedades.height,
+                            border: propiedades.border,
+                            outline: propiedades.outline,
+                            textAlign: propiedades.textAlign,
+                            color: propiedades.color,
+                            format: propiedades.format,
+                            minDate: propiedades.minDate,
+                            maxDate: propiedades.maxDate,
+                            fontFamily: propiedades.fontFamily,
+                            fontSize: propiedades.fontSize,
+                            fontStyle: propiedades.fontStyle,
+                            fontWeight: propiedades.fontWeight,
+                            textDecoration: propiedades.textDecoration,
+                        }
+                    };
+
+                    draggableFields.push(fieldObj);
+                    guardarCamposBtn.style.display = "inline-block";
+
+                    containerDiv.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        hideAllButtonContainersExcept(containerDiv);
+
+                        const buttonContainer = containerDiv.querySelector('.field-buttons');
+                        if (buttonContainer) {
+                            buttonContainer.style.display = "block";
+                        }
+
+                        activeFieldObj = fieldObj;
+                    });
+
+                    containerDiv.addEventListener("focus", () => {
+                        hideAllButtonContainersExcept(containerDiv);
+
+                        const buttonContainer = containerDiv.querySelector('.field-buttons');
+                        if (buttonContainer) {
+                            buttonContainer.style.display = "block";
+                        }
+
+                        activeFieldObj = fieldObj;
+                    });
+
+                    containerDiv.addEventListener("blur", () => {
+                        buttonContainer.style.display = "none";
+                    });
+
+                    buttonDelete.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        containerDiv.remove();
+                        draggableFields = draggableFields.filter(item => item.container !== containerDiv);
+
+                        if (draggableFields.length == 0) {
+                            guardarCamposBtn.style.display = "none";
+                        }
+                    });
+
+                    buttonSettings.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        activeFieldObj = fieldObj;
+                        showPropertiesPanel(fieldObj);
+                    });
+                    break;
+                }
+
                 default:
                     break;
             }
@@ -2068,8 +2517,15 @@ function updateDraggableFields() {
             fieldObj.container.style.width = (fieldObj.originalPdfData.pdfFieldWidth * scale) + "px";
             fieldObj.container.style.height = (fieldObj.originalPdfData.pdfFieldHeight * scale) + "px";
 
-            if (fieldObj.type === "text" || fieldObj.type === "dropdown" || fieldObj.type === "textarea") {
-                fieldObj.fieldElement.style.fontSize = (fieldObj.properties.fontSize * scale) + "px";
+            switch (fieldObj.idField) {
+                case TIPO_CAMPO_TEXT:
+                case TIPO_CAMPO_SELECT:
+                case TIPO_CAMPO_TEXT_AREA:
+                case TIPO_CAMPO_DATE:
+                    fieldObj.fieldElement.style.fontSize = (fieldObj.properties.fontSize * scale) + "px";
+                    break;
+                default:
+                    break;
             }
         } else {
             fieldObj.container.style.display = "none";
@@ -2310,6 +2766,19 @@ function showPropertiesPanel(fieldObj) {
             $("#font-italic").prop("checked", (props.fontStyle == "italic" ? true : false));
             $("#font-color").val(props.color);
             break;
+        case TIPO_CAMPO_DATE:
+            $("div.propDate").removeClass("hidden");
+
+            $("#font-family").val(props.fontFamily);
+            $("#font-size").val(props.fontSize);
+            $("#font-bold").prop("checked", (props.fontWeight == "bold" ? true : false));
+            $("#font-italic").prop("checked", (props.fontStyle == "italic" ? true : false));
+            $("#font-color").val(props.color);
+
+            $("#format-date").val(props.format);
+            $("#min-date").datepicker("setDate", props.minDate).val(props.minDate);
+            $("#max-date").datepicker("setDate", props.maxDate).val(props.maxDate);
+            break;
         default:
             break;
     }
@@ -2427,12 +2896,82 @@ function applyProperties() {
                 fontWeight
             });
             break;
+        case TIPO_CAMPO_DATE:
+            var fontColor = $("#font-color").val();
+            var fontFamily = $("#font-family").val();
+            var fontSize = parseInt($("#font-size").val());
+            var fontStyle = $("#font-italic").prop("checked") ? "italic" : "normal";
+            var fontWeight = $("#font-bold").prop("checked") ? "bold" : "normal";
+            var format = $("#format-date").val();
+            var minDate = $("#min-date").val();
+            var maxDate = $("#max-date").val();
+
+            var computedFontSize = fontSize * scale;
+            var lineHeight = computedFontSize * FACTOR_HEIGHT_FONT_SIZE;
+            var defaultHeight = lineHeight;
+
+            activeFieldObj.container.style.height = defaultHeight + "px";
+            activeFieldObj.container.dataset.originHeight = defaultHeight / scale;
+
+            const currentFormat = activeFieldObj.properties.format;
+            const convertedDate = convertDateFormat(activeFieldObj.properties.text, currentFormat, format);
+
+            Object.assign(activeFieldObj.properties, {
+                color: fontColor,
+                fontFamily,
+                fontSize,
+                fontStyle,
+                fontWeight,
+                format,
+                minDate,
+                maxDate,
+                text: convertedDate
+            });
+
+            activeFieldObj.fieldElement.value = convertedDate;
+
+            Object.assign(activeFieldObj.fieldElement.style, {
+                color: fontColor,
+                fontFamily,
+                fontSize: `${fontSize * scale}px`,
+                fontStyle,
+                fontWeight
+            });
+            break;
         default:
             console.warn("Tipo de campo no reconocido:", idField);
             break;
     }
 
     $("#field-properties").addClass("hidden");
+}
+
+function convertDateFormat(dateStr, fromFormat, toFormat) {
+    const delimiter = fromFormat.includes("/") ? "/" : "-";
+    const outputDelimiter = toFormat.includes("/") ? "/" : "-";
+
+    let fromParts = fromFormat.split(delimiter);
+    let dateParts = dateStr.split(delimiter);
+
+    if (fromParts.length !== dateParts.length) {
+        console.error("Error: La fecha no coincide con el formato de entrada.");
+        return null;
+    }
+
+    let dateMap = {};
+    fromParts.forEach((part, index) => {
+        dateMap[part] = dateParts[index];
+    });
+
+    if (!dateMap["dd"] || !dateMap["mm"] || !dateMap["yy"]) {
+        console.error("Error: Formato de fecha inválido.");
+        return null;
+    }
+
+    let toParts = toFormat.split(outputDelimiter);
+    let newDate = toParts.map(part => dateMap[part]).join(outputDelimiter);
+
+    return newDate;
 }
 
 guardarCamposBtn.addEventListener('click', async () => {

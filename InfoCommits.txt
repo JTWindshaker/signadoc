@@ -1,12 +1,28 @@
 =========================================
-============= *Ready 13/03/2025* ============
+============= *Ready 14/03/2025* ============
 =========================================
 
 *Cambios:*
--- Ajustes dados en el archivo PRUEBAS SIGNADOC.docx (El archivo original se partió en dos paquetes de ajustes. Se sacan los nuevos campos para otro despliegue).
+-- Ajustes dados en el archivo PRUEBAS SIGNADOC_Parte 2.docx (El archivo original se partió en dos paquetes de ajustes. Se sacan los nuevos campos para otro despliegue).
 
 *Notas/Observaciones:*
--- 
+-- Se arregla error de que ya no genera el pdf en vista al guardar. Se me olvidó descomentar eso xD Mala mía
 
 *SQL:*
---
+#Se crean los nuevos tipos de campo
+
+insert into tipo_campo(nombre, estado) values('date', true);
+insert into tipo_campo(nombre, estado) values('check', true);
+
+
+#Se crean los campos nuevos
+
+insert into campo(tipo_campo_id, nombre, propiedades, estado) values(5, 'Date', '{"id":5,"name":"Date","text":"Date","type":"date","color":"#000000","width":"100%","border":"none","height":"100%","idField":5,"outline":"none","format":"yy-mm-dd","minDate":"","maxDate":"","pdfData":{"pdfX":0,"pdfY":0,"pdfPageWidth":0,"pdfFieldWidth":0,"pdfPageHeight":0,"pdfFieldHeight":0},"fontSize":12,"container":{"width":150,"height":30,"tabIndex":0,"className":"draggable"},"fontStyle":"normal","textAlign":"left","fontFamily":"Helvetica","fontWeight":"normal","isEditable":true,"textDecoration":"auto","originalPdfData":{"pdfX":0,"pdfY":0,"pdfPageWidth":0,"pdfFieldWidth":0,"pdfPageHeight":0,"pdfFieldHeight":0}}', true);
+
+
+#Se modifican los campos existentes
+
+update campo set nombre='Text', propiedades='{"id":1,"name":"Text","text":"Text","type":"text","color":"#000000","width":"100%","border":"none","height":"100%","idField":1,"outline":"none","pdfData":{"pdfX":0,"pdfY":0,"pdfPageWidth":0,"pdfFieldWidth":0,"pdfPageHeight":0,"pdfFieldHeight":0},"fontSize":12,"container":{"width":150,"height":30,"tabIndex":0,"className":"draggable"},"fontStyle":"normal","textAlign":"left","fontFamily":"Helvetica","fontWeight":"normal","isEditable":true,"textDecoration":"auto","originalPdfData":{"pdfX":0,"pdfY":0,"pdfPageWidth":0,"pdfFieldWidth":0,"pdfPageHeight":0,"pdfFieldHeight":0}}' where id=1;
+update campo set nombre='Select', propiedades='{"id":2,"name":"Select","text":"Select","type":"select","color":"#000000","value":"0","width":"calc(100% - 10px)","border":"none","height":"100%","idField":2,"options":[{"id":0,"name":"-- Seleccione --"}],"outline":"none","pdfData":{"pdfX":0,"pdfY":0,"pdfPageWidth":0,"pdfFieldWidth":0,"pdfPageHeight":0,"pdfFieldHeight":0},"fontSize":12,"container":{"width":150,"height":30,"tabIndex":0,"className":"draggable"},"fontStyle":"normal","textAlign":"left","fontFamily":"Helvetica","fontWeight":"normal","isEditable":true,"textDecoration":"auto","originalPdfData":{"pdfX":0,"pdfY":0,"pdfPageWidth":0,"pdfFieldWidth":0,"pdfPageHeight":0,"pdfFieldHeight":0}}' where id=2;
+update campo set propiedades='{"id":3,"src":"","name":"QR","type":"image","image":"","width":"100%","height":"100%","idField":3,"opacity":1,"pdfData":{"pdfX":0,"pdfY":0,"pdfPageWidth":0,"pdfFieldWidth":0,"pdfPageHeight":0,"pdfFieldHeight":0},"rotation":0,"container":{"width":150,"height":150,"tabIndex":0,"className":"draggable"},"isEditable":true,"originalPdfData":{"pdfX":0,"pdfY":0,"pdfPageWidth":0,"pdfFieldWidth":0,"pdfPageHeight":0,"pdfFieldHeight":0}}' where id=3;
+update campo set nombre='Textarea', propiedades='{"id":4,"name":"Textarea","text":"Textarea","type":"textarea","color":"#000000","width":"100%","border":"none","height":"100%","idField":4,"outline":"none","pdfData":{"pdfX":0,"pdfY":0,"pdfPageWidth":0,"pdfFieldWidth":0,"pdfPageHeight":0,"pdfFieldHeight":0},"fontSize":12,"container":{"width":150,"height":30,"tabIndex":0,"className":"draggable"},"fontStyle":"normal","textAlign":"left","fontFamily":"Helvetica","fontWeight":"normal","isEditable":true,"textDecoration":"auto","originalPdfData":{"pdfX":0,"pdfY":0,"pdfPageWidth":0,"pdfFieldWidth":0,"pdfPageHeight":0,"pdfFieldHeight":0}}' where id=4;

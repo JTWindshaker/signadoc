@@ -217,6 +217,9 @@ class TemplateController extends Controller
                     break;
                 case TipoCampo::TIPO_CAMPO_TEXT_AREA:
                     break;
+                case TipoCampo::TIPO_CAMPO_DATE:
+                    $obj->propiedades->text = date("Y-m-d");
+                    break;
                 default:
                     break;
             }
